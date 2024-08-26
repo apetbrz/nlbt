@@ -4,8 +4,8 @@ const AUTOMATIC_PAYMENT_PREFIX: char = '*';
 
 pub struct Budget{
     username: String,
+    current_balance: i32,
     expected_income: i32,
-    pub current_balance: i32,
     expected_expenses: HashMap<String, i32>,
     current_expenses: HashMap<String, i32>,
     savings: i32
@@ -27,6 +27,11 @@ impl Budget{
     //set_income(): sets expected_income to the new value
     pub fn set_income(&mut self, cents: i32){
         self.expected_income = cents;
+    }
+
+    //add_income(): adds new value to expected_income
+    pub fn add_income(&mut self, cents: i32){
+        self.set_income(self.expected_income + cents); 
     }
     
     //get_paid(): adds expected_income to current_balance

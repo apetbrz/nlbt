@@ -11,7 +11,8 @@ const COMMAND_PROMPT: &str = ">>";
 const COMMANDS_LIST: &str ="========================={ nos-clbt }=========================\n\
                             ======{ everything in [square brackets] is an argument }======\n\
                             \thelp: shows this menu, lol!\n\
-                            \tset income [amount]: sets your expected income\n\
+                            \tincome set [amount]: sets your expected income\n\
+                            \tincome raise [amount]: adds to your income\n\
                             \tpaid: receive your income\n\
                             \tpaid [amount]: receive some amount\n\
                             \tnew [name] [amount]: create a new expenditure\n\
@@ -72,7 +73,7 @@ fn main() -> Result<(), io::Error> {
 }
 
 fn parse_command(term: &Term, input: &str, bud: &mut Budget) -> Result<String, String>{
-    let mut command = input.split_ascii_whitespace();
+    let mut command = input.split_whitespace();
     let command: [&str; COMMAND_ARGS_LIMIT] = [(); COMMAND_ARGS_LIMIT].map(|_| command.next().unwrap_or(""));
 
     let out: Result<String, String> = {
@@ -80,11 +81,16 @@ fn parse_command(term: &Term, input: &str, bud: &mut Budget) -> Result<String, S
             "help" => {
                 Ok(COMMANDS_LIST.to_string())
             },
-            "set" => {
+            "income" => {
                 match command[1]{
-                    "income" => {
+                    "set" => {
                         let amount = budget::parse_dollar_string(command[2])?;
                         bud.set_income(amount);
+                        Ok("Input set!".to_string())
+                    },
+                    "raise" => {
+                        let amount = budget::parse_dollar_string(command[2])?;
+                        bud.add_income(amount);
                         Ok("Input set!".to_string())
                     },
                     _ => {
@@ -126,7 +132,7 @@ fn parse_command(term: &Term, input: &str, bud: &mut Budget) -> Result<String, S
                     "" => Err(String::from("invalid-command")),
                     "all" => bud.save_all(),
                     _ => {
-                        let amount = budget::parse_dollar_string(command[2])?;
+                        let amount = budget::parse_dollar_string(command[1])?;
                         bud.save(amount)
                     }
                 }
