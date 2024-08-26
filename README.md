@@ -1,4 +1,4 @@
-# nos-clbt
+# nclbt
 
 ## nos' command-line budget tool
 
