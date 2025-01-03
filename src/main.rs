@@ -149,4 +149,3 @@ fn parse_command(term: &Term, input: &str, bud: &mut Budget) -> Result<String, S
 
     out
 }
-

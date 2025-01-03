@@ -8,4 +8,7 @@ still missing support for saving/loading
 
 fun little project i made/am making, to practice Rust for the first time
 
-TODO: comment everything, build instructions
+### building:
+
+- install rust from `https://rustup.rs/`
+- run `cargo build`
