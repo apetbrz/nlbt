@@ -1,151 +1,115 @@
 mod budget;
-
 use budget::Budget;
-use std::io;
-use console::Term;
-use dialoguer::Input;
+mod ui;
+mod fileio;
 
-const APP_TITLE: &str = "nos-clbt";
-const COMMAND_ARGS_LIMIT: usize = 10;
-const COMMAND_PROMPT: &str = ">>";
-const COMMANDS_LIST: &str ="========================={ nos-clbt }=========================\n\
-                            ======{ everything in [square brackets] is an argument }======\n\
-                            \thelp: shows this menu, lol!\n\
-                            \tincome set [amount]: sets your expected income\n\
-                            \tincome raise [amount]: adds to your income\n\
-                            \tpaid: receive your income\n\
-                            \tpaid [amount]: receive some amount\n\
-                            \tnew [name] [amount]: create a new expenditure\n\
-                            \t\t(overrides existing copies)\n\
-                            \t\t(prefix with \"*\" to make it automatic)\n\
-                            \tpay [name]: pay a static expenditure\n\
-                            \tpay [name] [amount]: pay some amount to an expenditure\n\
-                            \tsave [amount]: add an amount into savings\n\
-                            \tsave all: add the remaining balance into savings\n\
-                            \tclear: clear the terminal\n\
-                            \texit: close the app\n\
-                            ==============================================================\n\
-                            \tMANY FEATURES ARE NOT IMPLEMENTED!!!!\n\
-                            \tINCLUDING SAVING/LOADING!!!!!!!!!!!!!\n\
-                            ==============================================================\n";
+use clap::Parser;
 
-fn main() -> Result<(), io::Error> {
-    let term = Term::stdout();
-    term.set_title(APP_TITLE);
-    term.clear_screen()?;
-    fn output(t: &Term, s: &str){
-        t.write_line(s).expect("console-should-write");
+/// nice command line budget tool
+#[derive(Parser, Debug)]
+#[command(version, about, author, long_about = None,
+override_usage("nclbt [OPTIONS] \
+        nclbt -i \
+        nclbt -p")
+)]
+struct Args {
+    ///enable the interactive ui
+    ///
+    ///implies -q, as it will not output on exit
+    ///include -q to reverse this
+    #[arg(short, long)]
+    interactive: bool,
+    
+    ///run without a save file
+    #[arg(short='v', long)]
+    mem_only: bool,
+
+    ///no output
+    #[arg(short, long)]
+    quiet: bool,
+
+    ///output as JSON
+    #[arg(short, long)]
+    json: bool,
+
+    ///account to load
+    ///
+    ///when ommited, uses default account, with name set by -D
+    #[arg(short='A', long)]
+    account: Option<String>,
+
+    ///set default account username
+    ///
+    ///used for the default account when -A is ommited
+    #[arg(short = 'D', long)]
+    default_name: Option<String>,
+
+    ///set paycheck amount
+    ///
+    ///the default amount added to the account
+    ///when -P is used
+    #[arg(short='C', long)]
+    paycheck: Option<String>,
+
+    ///get paid
+    ///
+    ///optionally takes an amount
+    ///without an amount, uses paycheck value from -C
+    ///recommended to use with -c
+    #[arg(short='P', long)]
+    paid: bool,
+
+    ///reset all paid expenses to zero
+    #[arg(short, long)]
+    clear: bool,
+
+    ///pay an amount
+    ///
+    ///requires an expense (-e) and optionally an amount (-a)
+    ///without an amount, expense is paid in full
+    #[arg(short,long)]
+    pay: bool,
+
+    ///set an expense amount
+    ///
+    ///requires an expense (-e) and an amount (-a)
+    #[arg(short,long)]
+    set: bool,
+
+    ///select an existing expense
+    ///
+    ///selects a target for one of -p or -s
+    #[arg(short, long)]
+    expense: Vec<String>,
+
+    ///create and select a new expense
+    #[arg(short, long)]
+    new_expense: Vec<String>,
+
+    ///target dollar amount
+    ///
+    ///provides a quantity of money for -p and -s commands
+    #[arg(short,long)]
+    amount: Vec<f32>,
+}
+
+fn main() -> Result<(),std::io::Error> {
+
+    let args = Args::parse();
+
+    let mut bud = match args.mem_only {
+        true => Budget::new(args.account.as_ref().or(args.default_name.as_ref())),
+        false => todo!("saving/loading")
+    };
+
+    match args.interactive {
+        true => ui::run_interactive(&args, &mut bud),
+        false => todo!("non-interactive")
+    }?;
+
+    if !(args.interactive ^ args.quiet) {
+        println!("{bud}");
     }
-
-    //output(&term, "initializing...");
-
-    let mut bud = Budget::new();
-
-    output(&term, &bud.to_string());
-    output(&term, ">>  tip: enter 'help' to get started!\n");
-
-    let mut user_input: String;
-    loop{
-        user_input = Input::<String>::new()
-            .with_prompt(COMMAND_PROMPT)
-            .interact_text()
-            .unwrap();
-
-        if user_input.trim() == "exit" { break; }
-
-        
-        let result = parse_command(&term, &user_input, &mut bud);
-        
-        term.clear_screen()?;
-
-        output(&term, &bud.to_string());
-
-        match result{
-            Ok(s) => output(&term, &s),
-            Err(s) => {
-                output(&term, "error!");
-                output(&term, &s);
-            }
-        }
-    }
-
     Ok(())
 }
 
-fn parse_command(term: &Term, input: &str, bud: &mut Budget) -> Result<String, String>{
-    let mut command = input.split_whitespace();
-    let command: [&str; COMMAND_ARGS_LIMIT] = [(); COMMAND_ARGS_LIMIT].map(|_| command.next().unwrap_or(""));
-
-    let out: Result<String, String> = {
-        match command[0]{
-            "help" => {
-                Ok(COMMANDS_LIST.to_string())
-            },
-            "income" => {
-                match command[1]{
-                    "set" => {
-                        let amount = budget::parse_dollar_string(command[2])?;
-                        bud.set_income(amount);
-                        Ok("Input set!".to_string())
-                    },
-                    "raise" => {
-                        let amount = budget::parse_dollar_string(command[2])?;
-                        bud.add_income(amount);
-                        Ok("Input set!".to_string())
-                    },
-                    _ => {
-                        Err(String::from("invalid-command"))
-                    }
-                }
-            },
-            "paid" => {
-                match command[1]{
-                    "" => {
-                        let output = bud.get_paid()?;
-                        Ok(format!("You got paid!\n{}",output))
-                    },
-                    _ => {
-                        let amount = budget::parse_dollar_string(command[2])?;
-                        bud.get_paid_value(amount);
-                        Ok(format!("You got paid {}!", amount))
-                    }
-                }
-            },
-            "new" => {
-                let name = command[1];
-                let amount = budget::parse_dollar_string(command[2])?;
-                bud.add_expense(name, amount);
-                Ok(String::from("Expense added!"))
-            },
-            "pay" => {
-                let name = command[1];
-                match command[2]{
-                    "" => bud.make_static_payment(name),
-                    _ =>{
-                        let amount = budget::parse_dollar_string(command[2])?;
-                        bud.make_dynamic_payment(name, amount)
-                    }
-                }
-            },
-            "save" => {
-                match command[1]{
-                    "" => Err(String::from("invalid-command")),
-                    "all" => bud.save_all(),
-                    _ => {
-                        let amount = budget::parse_dollar_string(command[1])?;
-                        bud.save(amount)
-                    }
-                }
-            },
-            "clear" => {
-                match term.clear_screen(){
-                    Ok(()) => Ok(String::new()),
-                    Err(e) => Err(e.to_string())
-                }
-            },
-            _ => return Err(String::from("invalid-command"))
-        }
-    };
-
-    out
-}

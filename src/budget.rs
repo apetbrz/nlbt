@@ -3,7 +3,7 @@ use std::collections::HashMap;
 const AUTOMATIC_PAYMENT_PREFIX: char = '*';
 
 pub struct Budget{
-    username: String,
+    account: String,
     current_balance: i32,
     expected_income: i32,
     expected_expenses: HashMap<String, i32>,
@@ -12,10 +12,10 @@ pub struct Budget{
 }
 impl Budget{
     //new(): factory method, returning a new Budget
-    //TODO: SAVING/LOADING, USERNAMES
-    pub fn new() -> Budget{
+    //TODO: SAVING/LOADING, accountS
+    pub fn new(account: Option<&String>) -> Budget{
         Budget{
-            username: String::from("noname"),
+            account: String::from(account.map_or("user", |v| v)),
             expected_income: 0,
             current_balance: 0,
             expected_expenses: HashMap::new(),
@@ -43,7 +43,7 @@ impl Budget{
                 if n == -1 { Ok(String::new()) }
                 else{ Ok(String::from("Payments made!")) }
             },
-            Err(n) => Err(String::from("You couldn't afford your automatic payments!"))
+            Err(_) => Err(String::from("You couldn't afford your automatic payments!"))
         }
     }
     
@@ -136,10 +136,10 @@ impl Budget{
 }
 
 impl std::fmt::Display for Budget{
-    //fmt(): Display String has a header, with username, followed by balance and expected pay, and then all expenses
+    //fmt(): Display String has a header, with account, followed by balance and expected pay, and then all expenses
     //TODO: better?? lol
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "==={{ Welcome, {}! }}===\n", self.username)?;
+        write!(f, "==={{ Welcome, {}! }}===\n", self.account)?;
         write!(f, "Balance: {}\n", format_dollars(&self.current_balance))?;
         write!(f, "Income: {}\n", format_dollars(&self.expected_income))?;
         write!(f, "Savings: {}\n", format_dollars(&self.savings))?;
@@ -193,10 +193,10 @@ pub fn parse_dollar_string(s: &str) -> Result<i32, String>{
     }
     match s.parse::<i32>(){
         Ok(n) => Ok(n*100),
-        Err(er) => {
+        Err(_) => {
             match s.parse::<f32>(){
                 Ok(m) => Ok(dollars_to_cents(m)),
-                Err(err) => Err(String::from("not-a-number"))
+                Err(_) => Err(String::from("not-a-number"))
             }
         }
     }
