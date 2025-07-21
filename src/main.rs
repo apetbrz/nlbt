@@ -8,9 +8,10 @@ use clap::Parser;
 /// nice command line budget tool
 #[derive(Parser, Debug)]
 #[command(version, about, author, long_about = None,
-override_usage("nclbt [OPTIONS] \
-        nclbt -i \
-        nclbt -p")
+override_usage("nclbt [OPTIONS]
+       nclbt -i
+       nclbt -Pc
+       nclbt -pe <EXPENSE> -a <AMOUNT>")
 )]
 struct Args {
     ///enable the interactive ui
@@ -63,7 +64,7 @@ struct Args {
     #[arg(short, long)]
     clear: bool,
 
-    ///pay an amount
+    ///pay one or more expenses
     ///
     ///requires an expense (-e) and optionally an amount (-a)
     ///without an amount, expense is paid in full
