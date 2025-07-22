@@ -9,7 +9,7 @@ supports fixed-income, multiple accounts, interactive and non-interactive cli mo
 ### usage:
 
 ```
-> ./target/debug/nclbt -h
+> nclbt -h
 nice command line budget tool
 
 Usage: nclbt [OPTIONS]
