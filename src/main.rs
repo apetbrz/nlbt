@@ -108,6 +108,7 @@ fn parse_args() -> ArgMatches {
                 .long("new")
                 .action(ArgAction::Append)
                 .num_args(2)
+                .value_names(["expense", "amount"])
                 .help("create a new expense")
                 .long_help(
                     "Creates a new expense with \
