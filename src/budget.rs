@@ -1,8 +1,10 @@
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 const AUTOMATIC_PAYMENT_PREFIX: char = '*';
 
-pub struct Budget{
+#[derive(Serialize, Deserialize)]
+pub struct Budget {
     account: String,
     current_balance: i32,
     expected_income: i32,

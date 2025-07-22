@@ -29,7 +29,7 @@ const COMMANDS_LIST: &str ="=============={ nos' command-line budget tool }=====
                             \tINCLUDING SAVING/LOADING!!!!!!!!!!!!!\n\
                             ==============================================================\n";
 
-pub fn run_interactive(_args: &Args, mut bud: &mut budget::Budget) -> Result<(),io::Error> {
+pub fn run_interactive(_args: &ArgMatches, bud: &mut budget::Budget) -> Result<(), io::Error> {
     let term = Term::stdout();
     term.set_title(APP_TITLE);
     term.clear_screen()?;
@@ -46,7 +46,7 @@ pub fn run_interactive(_args: &Args, mut bud: &mut budget::Budget) -> Result<(),
 
         if user_input.trim() == "exit" || user_input.trim() == "q" { break; }
 
-        let result = parse_command(&term, &user_input, &mut bud);
+        let result = parse_and_execute_command(&term, &user_input, bud);
 
         term.clear_screen()?;
 
@@ -70,7 +70,7 @@ fn output(t: &Term, s: &str){
     t.write_line(s).expect("console-should-write");
 }
 
-fn parse_command(term: &Term, input: &str, bud: &mut Budget) -> Result<String, String>{
+fn parse_and_execute_command(term: &Term, input: &str, bud: &mut Budget) -> Result<String, String> {
     let mut command = input.split_whitespace();
     let command: [&str; COMMAND_ARGS_LIMIT] = [(); COMMAND_ARGS_LIMIT].map(|_| command.next().unwrap_or(""));
 
