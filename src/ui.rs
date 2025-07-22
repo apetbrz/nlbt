@@ -1,14 +1,14 @@
 use crate::budget;
 use crate::*;
 use budget::Budget;
-use std::io;
 use console::Term;
 use dialoguer::Input;
+use std::io;
 
 const APP_TITLE: &str = "nclbt";
 const COMMAND_ARGS_LIMIT: usize = 10;
 const COMMAND_PROMPT: &str = ">>";
-const COMMANDS_LIST: &str ="=============={ nos' command-line budget tool }===============\n\
+const COMMANDS_LIST: &str = "=============={ nos' command-line budget tool }===============\n\
                             ========{ everything in [square brackets] is a value }========\n\
                             \thelp: shows this menu, lol!\n\
                             \tincome set [amount]: sets your expected income\n\
@@ -38,13 +38,15 @@ pub fn run_interactive(_args: &ArgMatches, bud: &mut budget::Budget) -> Result<(
     output(&term, ">>  tip: enter 'help' to get started!\n");
 
     let mut user_input: String;
-    loop{
+    loop {
         user_input = Input::<String>::new()
             .with_prompt(COMMAND_PROMPT)
             .interact_text()
             .unwrap();
 
-        if user_input.trim() == "exit" || user_input.trim() == "q" { break; }
+        if user_input.trim() == "exit" || user_input.trim() == "q" {
+            break;
+        }
 
         let result = parse_and_execute_command(&term, &user_input, bud);
 
@@ -52,7 +54,7 @@ pub fn run_interactive(_args: &ArgMatches, bud: &mut budget::Budget) -> Result<(
 
         output(&term, &bud.to_string());
 
-        match result{
+        match result {
             Ok(s) => output(&term, &s),
             Err(s) => {
                 output(&term, "error!");
@@ -66,47 +68,40 @@ pub fn run_interactive(_args: &ArgMatches, bud: &mut budget::Budget) -> Result<(
     Ok(())
 }
 
-fn output(t: &Term, s: &str){
+fn output(t: &Term, s: &str) {
     t.write_line(s).expect("console-should-write");
 }
 
 fn parse_and_execute_command(term: &Term, input: &str, bud: &mut Budget) -> Result<String, String> {
     let mut command = input.split_whitespace();
-    let command: [&str; COMMAND_ARGS_LIMIT] = [(); COMMAND_ARGS_LIMIT].map(|_| command.next().unwrap_or(""));
+    let command: [&str; COMMAND_ARGS_LIMIT] =
+        [(); COMMAND_ARGS_LIMIT].map(|_| command.next().unwrap_or(""));
 
     let out: Result<String, String> = {
-        match command[0]{
-            "help" => {
-                Ok(COMMANDS_LIST.to_string())
-            },
-            "income" => {
-                match command[1]{
-                    "set" => {
-                        let amount = budget::parse_dollar_string(command[2])?;
-                        bud.set_income(amount);
-                        Ok("Input set!".to_string())
-                    },
-                    "raise" => {
-                        let amount = budget::parse_dollar_string(command[2])?;
-                        bud.add_income(amount);
-                        Ok("Input set!".to_string())
-                    },
-                    _ => {
-                        Err(String::from("invalid-command"))
-                    }
+        match command[0] {
+            "help" => Ok(COMMANDS_LIST.to_string()),
+            "income" => match command[1] {
+                "set" => {
+                    let amount = budget::parse_dollar_string(command[2])?;
+                    bud.set_income(amount);
+                    Ok("Input set!".to_string())
                 }
+                "raise" => {
+                    let amount = budget::parse_dollar_string(command[2])?;
+                    bud.add_income(amount);
+                    Ok("Input set!".to_string())
+                }
+                _ => Err(String::from("invalid-command")),
             },
-            "paid" => {
-                match command[1]{
-                    "" => {
-                        let output = bud.get_paid()?;
-                        Ok(format!("You got paid!\n{}",output))
-                    },
-                    _ => {
-                        let amount = budget::parse_dollar_string(command[2])?;
-                        bud.get_paid_value(amount);
-                        Ok(format!("You got paid {}!", amount))
-                    }
+            "paid" => match command[1] {
+                "" => {
+                    let output = bud.get_paid()?;
+                    Ok(format!("You got paid!\n{output}"))
+                }
+                _ => {
+                    let amount = budget::parse_dollar_string(command[2])?;
+                    bud.get_paid_value(amount);
+                    Ok(format!("You got paid {amount}!"))
                 }
             },
             "new" => {
@@ -114,34 +109,30 @@ fn parse_and_execute_command(term: &Term, input: &str, bud: &mut Budget) -> Resu
                 let amount = budget::parse_dollar_string(command[2])?;
                 bud.add_expense(name, amount);
                 Ok(String::from("Expense added!"))
-            },
+            }
             "pay" => {
                 let name = command[1];
-                match command[2]{
+                match command[2] {
                     "" => bud.make_static_payment(name),
-                    _ =>{
+                    _ => {
                         let amount = budget::parse_dollar_string(command[2])?;
                         bud.make_dynamic_payment(name, amount)
                     }
                 }
-            },
-            "save" => {
-                match command[1]{
-                    "" => Err(String::from("invalid-command")),
-                    "all" => bud.save_all(),
-                    _ => {
-                        let amount = budget::parse_dollar_string(command[1])?;
-                        bud.save(amount)
-                    }
+            }
+            "save" => match command[1] {
+                "" => Err(String::from("invalid-command")),
+                "all" => bud.save_all(),
+                _ => {
+                    let amount = budget::parse_dollar_string(command[1])?;
+                    bud.save(amount)
                 }
             },
-            "clear" => {
-                match term.clear_screen(){
-                    Ok(()) => Ok(String::new()),
-                    Err(e) => Err(e.to_string())
-                }
+            "clear" => match term.clear_screen() {
+                Ok(()) => Ok(String::new()),
+                Err(e) => Err(e.to_string()),
             },
-            _ => return Err(String::from("invalid-command"))
+            _ => return Err(String::from("invalid-command")),
         }
     };
 
