@@ -54,7 +54,7 @@ fn parse_args() -> ArgMatches {
                 .short('A')
                 .long("account")
                 .num_args(1)
-                .help("named account to load/modify")
+                .help("Select account to load/modify")
                 .long_help(
                     "Load an account file. \
                     If ommited, uses a default user account. \
@@ -67,7 +67,7 @@ fn parse_args() -> ArgMatches {
                 .short('D')
                 .long("set-default-name")
                 .num_args(1)
-                .help("set default account username")
+                .help("Set default account username")
                 .long_help(
                     "Modifies the name presented when the \
                     default user account is used.",
@@ -80,7 +80,7 @@ fn parse_args() -> ArgMatches {
                 .action(ArgAction::Append)
                 .num_args(1..=2)
                 .value_names(["expense", "[amount]"])
-                .help("pay an expense")
+                .help("Pay an expense")
                 .long_help(
                     "Requires an expense \
                     and optionally an amount. \
@@ -94,7 +94,7 @@ fn parse_args() -> ArgMatches {
                 .action(ArgAction::Append)
                 .num_args(2..=3)
                 .value_names(["expense", "modification"])
-                .help("edit an existing expense")
+                .help("Edit an existing expense")
                 .long_help(
                     "Requires at least two values: \
                     an existing expense and one or both of: \
@@ -109,7 +109,7 @@ fn parse_args() -> ArgMatches {
                 .action(ArgAction::Append)
                 .num_args(2)
                 .value_names(["expense", "amount"])
-                .help("create a new expense")
+                .help("Create a new expense")
                 .long_help(
                     "Creates a new expense with \
                     the provided name and amount.",
@@ -120,7 +120,7 @@ fn parse_args() -> ArgMatches {
                 .short('C')
                 .long("set-paycheck")
                 .num_args(1)
-                .help("set paycheck amount")
+                .help("Set paycheck amount")
                 .long_help(
                     "Set the fixed income paycheck for the current account. \
                     Used whenever -P is present without a value.",
@@ -131,7 +131,8 @@ fn parse_args() -> ArgMatches {
                 .short('c')
                 .long("clear")
                 .num_args(0..)
-                .help("clear amount(s) paid to expense(s)")
+                .value_names(["expense"])
+                .help("Clear amount(s) paid to expense(s)")
                 .long_help(
                     "Resets amounts paid to expenses to zero. \
                     If given without any names, resets all, otherwise only clears \
@@ -143,7 +144,7 @@ fn parse_args() -> ArgMatches {
                 .short('f')
                 .long("force")
                 .action(ArgAction::Count)
-                .help("force payments")
+                .help("Force payments")
                 .long_help(
                     "If present, skips the \"Cannot afford\" confirmation message \
                     and uses remamining balance for payments. Use twice to enable overdrafting.",
@@ -154,7 +155,7 @@ fn parse_args() -> ArgMatches {
                 .short('i')
                 .long("interactive")
                 .action(ArgAction::SetTrue)
-                .help("enable the interactive interface")
+                .help("Enable the interactive interface")
                 .long_help(
                     "Interactive mode. Implies -q, as it will not output upon exit. \
                     Include -v once to reverse this.",
@@ -165,7 +166,7 @@ fn parse_args() -> ArgMatches {
                 .short('m')
                 .long("mem-only")
                 .action(ArgAction::SetTrue)
-                .help("run without a save file")
+                .help("Run without a save file")
                 .long_help(
                     "Effectively creates a new, blank account, \
                     which can be interacted with normally, but \
@@ -177,7 +178,7 @@ fn parse_args() -> ArgMatches {
                 .short('q')
                 .long("quiet")
                 .action(ArgAction::SetTrue)
-                .help("silence output")
+                .help("Silence output")
                 .long_help("Silence output. Effectively counts as a negative verbose flag."),
         )
         .arg(
@@ -185,7 +186,7 @@ fn parse_args() -> ArgMatches {
                 .short('v')
                 .long("verbose")
                 .action(ArgAction::Count)
-                .help("increase detail of output")
+                .help("Increase detail of output")
                 .long_help(
                     "Adds additional information upon output, such as \
                     modifications made.",
@@ -196,7 +197,7 @@ fn parse_args() -> ArgMatches {
                 .short('j')
                 .long("json")
                 .action(ArgAction::SetTrue)
-                .help("output as json")
+                .help("Output as json")
                 .long_help("Replaces output with a JSON object. Compatible with -v for more data."),
         )
         .get_matches()

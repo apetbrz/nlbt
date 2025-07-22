@@ -9,31 +9,27 @@ supports fixed-income, multiple accounts, interactive and non-interactive cli mo
 ### usage:
 
 ```
-> ./nclbt -h
+> ./target/debug/nclbt -h
 nice command line budget tool
 
 Usage: nclbt [OPTIONS]
-       nclbt -i
-       nclbt -Pc
-       nclbt -pe <EXPENSE> -a <AMOUNT>
 
 Options:
-  -i, --interactive                  enable the interactive ui
-  -v, --mem-only                     run without a save file
-  -q, --quiet                        no output
-  -j, --json                         output as JSON
-  -A, --account <ACCOUNT>            account to load
-  -D, --default-name <DEFAULT_NAME>  set default account username
-  -C, --paycheck <PAYCHECK>          set paycheck amount
-  -P, --paid                         get paid
-  -c, --clear                        reset all paid expenses to zero
-  -p, --pay                          pay one or more expenses
-  -s, --set                          set an expense amount
-  -e, --expense <EXPENSE>            select an existing expense
-  -n, --new-expense <NEW_EXPENSE>    create and select a new expense
-  -a, --amount <AMOUNT>              target dollar amount
-  -h, --help                         Print help (see more with '--help')
-  -V, --version                      Print version
+  -A, --account <account>                 Select account to load/modify
+  -D, --set-default-name <default_name>   Set default account username
+  -p, --pay <expense> <[amount]>          Pay an expense
+  -e, --edit <expense> <modification>...  Edit an existing expense
+  -n, --new <expense> <amount>            Create a new expense
+  -C, --set-paycheck <paycheck>           Set paycheck amount
+  -c, --clear [<expense>...]              Clear amount(s) paid to expense(s)
+  -f, --force...                          Force payments
+  -i, --interactive                       Enable the interactive interface
+  -m, --mem-only                          Run without a save file
+  -q, --quiet                             Silence output
+  -v, --verbose...                        Increase detail of output
+  -j, --json                              Output as json
+  -h, --help                              Print help (see more with '--help')
+  -V, --version                           Print version
 ```
 
 ### building:
