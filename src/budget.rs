@@ -5,7 +5,7 @@ const AUTOMATIC_PAYMENT_PREFIX: char = '*';
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Budget {
-    account: String,
+    pub account: String,
     current_balance: i32,
     expected_income: i32,
     expected_expenses: HashMap<String, i32>,

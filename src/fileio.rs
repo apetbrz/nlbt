@@ -6,6 +6,9 @@ use thiserror::Error;
 
 use crate::budget::Budget;
 
+//version 1 with initial release
+const SAVE_FORMAT_VERSION: u8 = 0;
+
 #[derive(Serialize, Deserialize, Debug)]
 struct SaveFormat {
     app: String,
@@ -15,24 +18,32 @@ struct SaveFormat {
 }
 impl SaveFormat {
     fn new(account: &str) -> Self {
-        let new_budget = Budget::new(account);
         SaveFormat {
             app: env!("CARGO_PKG_NAME").into(),
             version: env!("CARGO_PKG_VERSION").into(),
-            save_format: 1,
-            data: bson::to_raw_document_buf(&Budget::new(account))
-                .unwrap_or_else(|err| {
-                    panic!(
-                    "New Budget struct failed to serialize to BSON doc, why? {err}\n{new_budget:?}"
-                )
-                })
-                .into_bytes(),
+            save_format: SAVE_FORMAT_VERSION,
+            data: Self::budget_into_bytes(Budget::new(account)),
+        }
+    }
+    fn save(budget: Budget) -> Self {
+        SaveFormat {
+            app: env!("CARGO_PKG_NAME").into(),
+            version: env!("CARGO_PKG_VERSION").into(),
+            save_format: SAVE_FORMAT_VERSION,
+            data: Self::budget_into_bytes(budget),
         }
     }
     fn into_bytes(self) -> Vec<u8> {
         bson::to_raw_document_buf(&self)
             .unwrap_or_else(|err| {
                 panic!("SaveFormat struct failed to serialize to BSON doc, why? {err}\n{self:?}")
+            })
+            .into_bytes()
+    }
+    fn budget_into_bytes(budget: Budget) -> Vec<u8> {
+        bson::to_raw_document_buf(&budget)
+            .unwrap_or_else(|err| {
+                panic!("Budget struct failed to serialize to BSON doc, why? {err}\n{budget:?}")
             })
             .into_bytes()
     }
