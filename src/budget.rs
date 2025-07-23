@@ -3,7 +3,7 @@ use std::collections::HashMap;
 
 const AUTOMATIC_PAYMENT_PREFIX: char = '*';
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Budget {
     account: String,
     current_balance: i32,
@@ -15,9 +15,9 @@ pub struct Budget {
 impl Budget {
     //new(): factory method, returning a new Budget
     //TODO: SAVING/LOADING, accountS
-    pub fn new(account: Option<&String>) -> Budget {
+    pub fn new(account: &str) -> Budget {
         Budget {
-            account: String::from(account.map_or("user", |v| v)),
+            account: String::from(account),
             expected_income: 0,
             current_balance: 0,
             expected_expenses: HashMap::new(),

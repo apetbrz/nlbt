@@ -20,12 +20,15 @@ fn main() -> Result<(), std::io::Error> {
     let account: Option<&String> = args.get_one("account");
     let new_default_name: Option<&String> = args.get_one("default_name");
 
+    fileio::relocate_to_application_dir()?;
+
     //load or generate a budget
     let mut bud = match mem_only {
-        true => Budget::new(account.or(args.get_one("default_name"))),
-        false => {
-            todo!("saving/loading")
+        true => {
+            let display_name = account.or(new_default_name).map_or("user", |v| v);
+            Budget::new(display_name)
         }
+        false => fileio::load_budget_account(account.map(String::as_str)).unwrap(),
     };
 
     match interactive_mode {
