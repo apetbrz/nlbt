@@ -2,9 +2,11 @@
 
 ## nice' command-line budget tool
 
-a simple budget tool, for tracking expenses
+A simple budget tool, for tracking expenses.
 
-supports fixed-income, multiple accounts, interactive and non-interactive cli modes, and json output
+Supports fixed-income, multiple accounts, interactive and non-interactive CLI modes, and JSON output.
+
+Currently in-development.
 
 ### usage:
 
@@ -34,5 +36,5 @@ Options:
 
 ### building:
 
-- install rust from `https://rustup.rs/`
-- run `cargo build`
+- Install rust from `https://rustup.rs/`
+- Run `cargo build`
