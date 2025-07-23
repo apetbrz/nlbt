@@ -1,8 +1,8 @@
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::fs::{self, File};
-use std::io::{self, Write};
+use std::io::{Read, Write};
 use std::path::Path;
-use thiserror::Error;
 
 use crate::budget::Budget;
 
@@ -49,18 +49,8 @@ impl SaveFormat {
     }
 }
 
-#[derive(Error, Debug)]
-pub enum LoadErr {
-    #[error(transparent)]
-    IoError(#[from] io::Error),
-    #[error(transparent)]
-    DataError(#[from] bson::de::Error),
-}
-#[derive(Error, Debug)]
-pub enum SaveErr {}
-
 //move active directory into application directory in system-dependent user data dir
-pub fn relocate_to_application_dir() -> Result<(), io::Error> {
+pub fn relocate_to_application_dir() -> Result<()> {
     //get OS-dependent user data dir and append package folder
     let working_dir = dirs::data_local_dir()
         .unwrap_or_else(|| panic!("Unsupported Operating System"))
@@ -75,37 +65,61 @@ pub fn relocate_to_application_dir() -> Result<(), io::Error> {
     }
 
     //move there
-    std::env::set_current_dir(working_dir)
+    Ok(std::env::set_current_dir(working_dir)?)
 }
 
 //creates application dir and subdirs
-fn generate_application_dir(path: &Path) -> Result<(), io::Error> {
+fn generate_application_dir(path: &Path) -> Result<()> {
     fs::create_dir_all(path)?;
-    fs::create_dir(path.join("data"))
+    Ok(fs::create_dir(path.join("data"))?)
 }
 
-//only returns a file if it exists, user must intentionally opt-in to making a new account
-fn access_account_save_from_file(account: &str) -> Result<SaveFormat, LoadErr> {
-    Ok(bson::from_slice(
-        &fs::read(format!("data/{account}.bson"))?.to_vec(),
-    )?)
+//returns File for given account
+fn get_account_file(account: &str) -> Result<File> {
+    let file_name = format!("data/{account}.bson");
+
+    //create file if not exists
+    if !fs::exists(&file_name)? {
+        make_new_account_file(account)?;
+    }
+
+    Ok(File::open(file_name)?)
+}
+
+//returns SaveFormat object from given account's save file, creating a new one if not present
+//TODO: move account creation to confirmation dialogue
+fn access_account_save_from_file(account: &str) -> Result<SaveFormat> {
+    let mut file = get_account_file(account)?;
+    let mut bytes: Vec<u8> = Vec::new();
+    file.read_to_end(&mut bytes)?;
+    Ok(bson::from_slice(bytes.as_slice())?)
 }
 
 //take in an account name and return the appropriate Budget object
-pub fn load_budget_account(account: Option<&str>) -> Result<Budget, LoadErr> {
+pub fn load_budget_account(account: Option<&str>) -> Result<Budget> {
     let account = account.unwrap_or("default");
     let save = access_account_save_from_file(account)?;
 
-    todo!("loading")
+    Ok(bson::from_slice(&save.data)?)
 }
 
 //write a budget out to the account's save file
-pub fn save_budget_to_account_file(budget: Budget) -> Result<(), io::Error> {
-    todo!("saving")
+pub fn save_budget_to_account_file(budget: Budget) -> Result<()> {
+    let account = &budget.account;
+    let mut file = make_account_file(account)?;
+    let data = SaveFormat::save(budget).into_bytes();
+    file.set_len(0)?;
+    file.write_all(data.as_slice())?;
+    file.flush()?;
+    Ok(())
 }
 
 //creates and returns a new file
-pub fn make_account_file(account: &str) -> Result<(), io::Error> {
-    File::create_new(format!("data/{account}.bson"))?
-        .write_all(&SaveFormat::new(account).into_bytes())
+pub fn make_new_account_file(account: &str) -> Result<()> {
+    Ok(make_account_file(account)?.write_all(&SaveFormat::new(account).into_bytes())?)
+}
+
+//creates and returns an empty save file
+pub fn make_account_file(account: &str) -> Result<File> {
+    Ok(File::create(format!("data/{account}.bson"))?)
 }

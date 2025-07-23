@@ -3,9 +3,10 @@ use budget::Budget;
 mod fileio;
 mod ui;
 
+use anyhow::Result;
 use clap::*;
 
-fn main() -> Result<(), std::io::Error> {
+fn main() -> Result<()> {
     //get arguments
     let args = parse_args();
 
@@ -20,6 +21,7 @@ fn main() -> Result<(), std::io::Error> {
     let account: Option<&String> = args.get_one("account");
     let new_default_name: Option<&String> = args.get_one("default_name");
 
+    //move to working directory
     fileio::relocate_to_application_dir()?;
 
     //load or generate a budget
@@ -31,11 +33,13 @@ fn main() -> Result<(), std::io::Error> {
         false => fileio::load_budget_account(account.map(String::as_str)).unwrap(),
     };
 
+    //process user commands
     match interactive_mode {
         true => ui::run_interactive(&args, &mut bud),
         false => todo!("non-interactive"),
     }?;
 
+    //output after processing
     if verbosity > 0 {
         match json_output {
             true => todo!("json output"),
@@ -44,6 +48,10 @@ fn main() -> Result<(), std::io::Error> {
             }
         }
     }
+
+    //save changes
+    fileio::save_budget_to_account_file(bud)?;
+
     Ok(())
 }
 
@@ -149,9 +157,18 @@ fn parse_args() -> ArgMatches {
                 .action(ArgAction::Count)
                 .help("Force payments")
                 .long_help(
-                    "If present, skips the \"Cannot afford\" confirmation message \
-                    and uses remamining balance for payments. Use twice to enable overdrafting.",
+                    "If present, skips the confirmation dialogue. Use twice to skip the \
+                    \"Cannot afford\" confirmation message and use remamining balance \
+                    for payments. Use thrice to enable overdrafting.",
                 ),
+        )
+        .arg(
+            Arg::new("dry_run")
+                .short('N')
+                .long("dry-run")
+                .action(ArgAction::SetTrue)
+                .help("Save no changes")
+                .long_help("Perform and output changes but do not save to file."),
         )
         .arg(
             Arg::new("interactive")
