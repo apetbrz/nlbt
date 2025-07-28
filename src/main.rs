@@ -120,6 +120,7 @@ fn parse_args() -> ArgMatches {
                 .long("paid")
                 .action(ArgAction::Append)
                 .num_args(0..=1)
+                .value_name("amount")
                 .default_missing_value(None)
                 .help("Get paid")
                 .long_help(
@@ -132,6 +133,7 @@ fn parse_args() -> ArgMatches {
                 .short('C')
                 .long("set-paycheck")
                 .num_args(1)
+                .value_name("amount")
                 .help("Set paycheck amount")
                 .long_help(
                     "Set the fixed income paycheck for the current account. \
