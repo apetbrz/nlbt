@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-const AUTOMATIC_PAYMENT_PREFIX: char = '*';
+// const AUTOMATIC_PAYMENT_PREFIX: char = '*';
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Budget {
@@ -64,8 +64,9 @@ impl Budget {
         }
     }
 
+    //TODO: automatic payments? default off, opt-in with a saved toggle? something like that
     //make_automatic_payments(): adds up total of automatic payments, returns money left over (if positive -> Ok, if negative -> Err)
-    pub fn make_automatic_payments(&mut self, cents: i32) -> Result<i32, i32> {
+    /*pub fn make_automatic_payments(&mut self, cents: i32) -> Result<i32> {
         let mut autos: Vec<String> = Vec::new();
         let mut payment = 0;
         for key in self.expected_expenses.iter() {
@@ -74,13 +75,10 @@ impl Budget {
                 payment += key.1;
             }
         }
-
         if payment == 0 {
             return Ok(-1);
         }
-
         payment = cents - payment;
-
         if payment < 0 {
             Err(payment)
         } else {
@@ -90,6 +88,7 @@ impl Budget {
             Ok(payment)
         }
     }
+    */
 
     //add_expense(): creates a new expense in both HashMaps, with the new value as the expected value in expected_expenses
     pub fn add_expense(&mut self, name: &str, cents: i32) {
