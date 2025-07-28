@@ -11,20 +11,23 @@ Currently in-development.
 ### usage:
 
 ```
-> nclbt -h
+> ./nclbt -h
 nice command line budget tool
 
 Usage: nclbt [OPTIONS]
 
 Options:
   -A, --account <account>                 Select account to load/modify
-  -D, --set-default-name <default_name>   Set default account username
   -p, --pay <expense> <[amount]>          Pay an expense
   -e, --edit <expense> <modification>...  Edit an existing expense
   -n, --new <expense> <amount>            Create a new expense
-  -C, --set-paycheck <paycheck>           Set paycheck amount
+  -P, --paid [<amount>]                   Get paid
+  -C, --set-paycheck <amount>             Set paycheck amount
   -c, --clear [<expense>...]              Clear amount(s) paid to expense(s)
   -f, --force...                          Force payments
+  -D, --set-default-name <default_name>   Set default account username
+  -N, --new-account <new_account>         Create a new account
+  -X, --dry-run                           Save no changes
   -i, --interactive                       Enable the interactive interface
   -m, --mem-only                          Run without a save file
   -q, --quiet                             Silence output
