@@ -1,9 +1,8 @@
 use crate::budget;
-use crate::*;
+use crate::error::{Error, Result};
 use budget::Budget;
 use console::Term;
 use dialoguer::Input;
-use std::io;
 
 const APP_TITLE: &str = "nclbt";
 const COMMAND_ARGS_LIMIT: usize = 10;
@@ -29,7 +28,7 @@ const COMMANDS_LIST: &str = "=============={ nos' command-line budget tool }====
                             \tINCLUDING SAVING/LOADING!!!!!!!!!!!!!\n\
                             ==============================================================\n";
 
-pub fn run_interactive(_args: &ArgMatches, bud: &mut budget::Budget) -> Result<(), io::Error> {
+pub fn run_interactive(bud: &mut budget::Budget) -> Result<()> {
     let term = Term::stdout();
     term.set_title(APP_TITLE);
     term.clear_screen()?;
@@ -58,7 +57,7 @@ pub fn run_interactive(_args: &ArgMatches, bud: &mut budget::Budget) -> Result<(
             Ok(s) => output(&term, &s),
             Err(s) => {
                 output(&term, "error!");
-                output(&term, &s);
+                output(&term, &s.to_string());
             }
         }
     }
@@ -72,12 +71,12 @@ fn output(t: &Term, s: &str) {
     t.write_line(s).expect("console-should-write");
 }
 
-fn parse_and_execute_command(term: &Term, input: &str, bud: &mut Budget) -> Result<String, String> {
+fn parse_and_execute_command(term: &Term, input: &str, bud: &mut Budget) -> Result<String> {
     let mut command = input.split_whitespace();
     let command: [&str; COMMAND_ARGS_LIMIT] =
         [(); COMMAND_ARGS_LIMIT].map(|_| command.next().unwrap_or(""));
 
-    let out: Result<String, String> = {
+    let out: Result<String> = {
         match command[0] {
             "help" => Ok(COMMANDS_LIST.to_string()),
             "income" => match command[1] {
@@ -91,12 +90,12 @@ fn parse_and_execute_command(term: &Term, input: &str, bud: &mut Budget) -> Resu
                     bud.add_income(amount);
                     Ok("Input set!".to_string())
                 }
-                _ => Err(String::from("invalid-command")),
+                other => Err(Error::InvalidCommand(other.into())),
             },
             "paid" => match command[1] {
                 "" => {
-                    let output = bud.get_paid()?;
-                    Ok(format!("You got paid!\n{output}"))
+                    bud.get_paid();
+                    Ok("You got paid!".into())
                 }
                 _ => {
                     let amount = budget::parse_dollar_string(command[2])?;
@@ -121,7 +120,7 @@ fn parse_and_execute_command(term: &Term, input: &str, bud: &mut Budget) -> Resu
                 }
             }
             "save" => match command[1] {
-                "" => Err(String::from("invalid-command")),
+                "" => Err(Error::InvalidCommand("empty save amount".into())),
                 "all" => bud.save_all(),
                 _ => {
                     let amount = budget::parse_dollar_string(command[1])?;
@@ -130,9 +129,9 @@ fn parse_and_execute_command(term: &Term, input: &str, bud: &mut Budget) -> Resu
             },
             "clear" => match term.clear_screen() {
                 Ok(()) => Ok(String::new()),
-                Err(e) => Err(e.to_string()),
+                Err(e) => Err(Error::IoFailure(e)),
             },
-            _ => return Err(String::from("invalid-command")),
+            cmd => return Err(Error::InvalidCommand(cmd.into())),
         }
     };
 

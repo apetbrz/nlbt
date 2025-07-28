@@ -1,3 +1,5 @@
+use crate::commands::BudgetCommands;
+use crate::error::{Error, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -26,6 +28,50 @@ impl Budget {
         }
     }
 
+    #[allow(unused_variables)]
+    pub fn execute(&mut self, cmds: BudgetCommands, force: u8) -> Result<()> {
+        use crate::commands::BudgetCommand as BC;
+        for cmd in cmds {
+            println!("[DEV] executing command: {cmd:?}");
+            match cmd {
+                BC::SetPaycheck { amount } => {
+                    self.set_income(amount);
+                }
+                BC::Paid { amount } => {
+                    if let Some(c) = amount {
+                        self.get_paid_value(c);
+                    } else {
+                        self.get_paid();
+                    }
+                }
+                BC::ClearExpense {
+                    targets,
+                    invert_selection,
+                } => {
+                    todo!("clear expenses")
+                }
+                BC::EditExpense {
+                    target,
+                    new_name,
+                    new_amount,
+                } => {
+                    todo!("exit existing expense")
+                }
+                BC::NewExpense { name, amount } => {
+                    self.add_expense(&name, amount);
+                }
+                BC::PayExpense { name, amount } => {
+                    if let Some(c) = amount {
+                        self.make_dynamic_payment(&name, c)?;
+                    } else {
+                        self.make_static_payment(&name)?;
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+
     //set_income(): sets expected_income to the new value
     pub fn set_income(&mut self, cents: i32) {
         self.expected_income = cents;
@@ -37,19 +83,8 @@ impl Budget {
     }
 
     //get_paid(): adds expected_income to current_balance
-    pub fn get_paid(&mut self) -> Result<String, String> {
-        self.refresh();
-        self.current_balance += self.expected_income;
-        match self.make_automatic_payments(self.current_balance) {
-            Ok(n) => {
-                if n == -1 {
-                    Ok(String::new())
-                } else {
-                    Ok(String::from("Payments made!"))
-                }
-            }
-            Err(_) => Err(String::from("You couldn't afford your automatic payments!")),
-        }
+    pub fn get_paid(&mut self) {
+        self.get_paid_value(self.expected_income)
     }
 
     //get_paid_value(): adds given value to current_balance
@@ -99,24 +134,21 @@ impl Budget {
     }
 
     //make_static_payment(): makes a payment into current_expenses, with the value from expected_expenses
-    pub fn make_static_payment(&mut self, name: &str) -> Result<String, String> {
-        let amount = if let Some(n) = self.expected_expenses.get(name) {
-            n
-        } else {
-            return Err(String::from("expense-not-found"));
-        };
-
-        self.make_dynamic_payment(name, *amount)
+    pub fn make_static_payment(&mut self, name: &str) -> Result<String> {
+        match self.expected_expenses.get(name) {
+            Some(n) => self.make_dynamic_payment(name, *n),
+            None => Err(Error::BudgetErrorExpenseDoesNotExist(name.into())),
+        }
     }
 
     //make_dynamic_payment(): makes a payment into current_expenses, with the given value
-    pub fn make_dynamic_payment(&mut self, name: &str, cents: i32) -> Result<String, String> {
+    pub fn make_dynamic_payment(&mut self, name: &str, cents: i32) -> Result<String> {
         let name = name.to_ascii_lowercase();
         if let Some(n) = self.current_expenses.get_mut(&name) {
             self.current_balance -= cents;
             *n += cents;
         } else {
-            return Err(String::from("expense-not-found"));
+            return Err(Error::BudgetErrorExpenseDoesNotExist(name));
         };
 
         Ok(format!(
@@ -127,9 +159,13 @@ impl Budget {
     }
 
     //save(): adds the given amount into savings
-    pub fn save(&mut self, cents: i32) -> Result<String, String> {
+    pub fn save(&mut self, cents: i32) -> Result<String> {
         if self.current_balance < cents {
-            Err(String::from("Not enough in balance to save that much!"))
+            Err(Error::BudgetErrorCannotAfford {
+                expense: "savings".into(),
+                amount: cents,
+                remaining_balance: self.current_balance,
+            })
         } else {
             self.current_balance -= cents;
             self.savings += cents;
@@ -138,7 +174,7 @@ impl Budget {
     }
 
     //save_all(): moves current_balance to savings
-    pub fn save_all(&mut self) -> Result<String, String> {
+    pub fn save_all(&mut self) -> Result<String> {
         self.save(self.current_balance)
     }
 }
@@ -194,15 +230,17 @@ pub fn format_dollars(cents: &i32) -> String {
     output.to_string()
 }
 
+//TODO: DOLLAR TRAIT FOR STRINGS AND f32???
+
 //dollars_to_cents(): takes a decimal amount of dollars and returns it in integer cents
 pub fn dollars_to_cents(dollars: f32) -> i32 {
     (dollars * 100.0) as i32
 }
 
 //parse_dollar_string(): takes a string literal and returns an integer cent amount if valid, or error message if not
-pub fn parse_dollar_string(s: &str) -> Result<i32, String> {
+pub fn parse_dollar_string(s: &str) -> Result<i32> {
     if s.is_empty() {
-        return Err(String::from("empty-dollar-string"));
+        return Err(Error::InvalidDollarValue(s.into()));
     }
     let mut s = s;
     if s.starts_with('$') {
@@ -212,14 +250,14 @@ pub fn parse_dollar_string(s: &str) -> Result<i32, String> {
         Ok(n) => Ok(n * 100),
         Err(_) => match s.parse::<f32>() {
             Ok(m) => Ok(dollars_to_cents(m)),
-            Err(_) => Err(String::from("not-a-number")),
+            Err(_) => Err(Error::InvalidDollarValue(s.into())),
         },
     }
 }
 
 //to_title_case(): takes a String and returns a new String with the first letter uppercase, and the rest lowercase
 pub fn to_title_case(s: String) -> String {
-    let mut out = s.clone();
+    let mut out = s;
     if let Some(r) = out.get_mut(0..1) {
         if r == "*" {
             if let Some(s) = out.get_mut(1..2) {

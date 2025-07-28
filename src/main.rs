@@ -1,47 +1,46 @@
 mod budget;
 use budget::Budget;
+use error::Result;
+mod commands;
+mod error;
 mod fileio;
 mod ui;
 
-use anyhow::Result;
 use clap::*;
+use commands::parse_input;
 
 fn main() -> Result<()> {
     //get arguments
     let args = parse_args();
 
-    //flags
-    let mem_only: bool = args.get_flag("mem_only");
-    let interactive_mode: bool = args.get_flag("interactive");
-    let verbosity: u8 =
-        1 + args.get_count("verbose") - (interactive_mode || args.get_flag("quiet")) as u8;
-    let json_output: bool = args.get_flag("json");
-
-    //account info
-    let account: Option<&String> = args.get_one("account");
-    let new_default_name: Option<&String> = args.get_one("default_name");
+    //arguments -> options and commands
+    let (app_settings, account_options, budget_commands) = parse_input(args)?;
 
     //move to working directory
     fileio::relocate_to_application_dir()?;
 
     //load or generate a budget
-    let mut bud = match mem_only {
-        true => {
-            let display_name = account.or(new_default_name).map_or("user", |v| v);
-            Budget::new(display_name)
-        }
-        false => fileio::load_budget_account(account.map(String::as_str)).unwrap(),
+    let mut bud = match app_settings.mem_only {
+        true => Budget::new(&account_options.account),
+        false => match account_options.create {
+            true => fileio::create_new_budget_account(&account_options.account)?,
+            false => fileio::load_budget_account(&account_options.account)?,
+        },
+    };
+
+    if let Some(new_name) = account_options.default_rename {
+        fileio::change_default_account_display_name(&new_name)?
     };
 
     //process user commands
-    match interactive_mode {
-        true => ui::run_interactive(&args, &mut bud),
-        false => todo!("non-interactive"),
+    match app_settings.interactive_mode {
+        true => ui::run_interactive(&mut bud),
+        false => bud.execute(budget_commands, app_settings.force),
     }?;
 
     //output after processing
-    if verbosity > 0 {
-        match json_output {
+    if app_settings.verbosity > 0 {
+        match app_settings.json {
             true => todo!("json output"),
             false => {
                 println!("{bud}");
@@ -50,7 +49,9 @@ fn main() -> Result<()> {
     }
 
     //save changes
-    fileio::save_budget_to_account_file(bud)?;
+    if !(app_settings.mem_only || app_settings.dry_run) {
+        fileio::save_budget_to_account_file(bud)?;
+    }
 
     Ok(())
 }
@@ -68,20 +69,7 @@ fn parse_args() -> ArgMatches {
                 .help("Select account to load/modify")
                 .long_help(
                     "Load an account file. \
-                    If ommited, uses a default user account. \
-                    Should the account not exist, the user will \
-                    be prompted to create a new one. ",
-                ),
-        )
-        .arg(
-            Arg::new("default_name")
-                .short('D')
-                .long("set-default-name")
-                .num_args(1)
-                .help("Set default account username")
-                .long_help(
-                    "Modifies the name presented when the \
-                    default user account is used.",
+                    If ommited, uses a default user account.",
                 ),
         )
         .arg(
@@ -127,6 +115,19 @@ fn parse_args() -> ArgMatches {
                 ),
         )
         .arg(
+            Arg::new("paid")
+                .short('P')
+                .long("paid")
+                .action(ArgAction::Append)
+                .num_args(0..=1)
+                .default_missing_value(None)
+                .help("Get paid")
+                .long_help(
+                    "Get paid, either a provided amount or the fixed \
+                    income set by -C.",
+                ),
+        )
+        .arg(
             Arg::new("paycheck")
                 .short('C')
                 .long("set-paycheck")
@@ -163,12 +164,35 @@ fn parse_args() -> ArgMatches {
                 ),
         )
         .arg(
-            Arg::new("dry_run")
+            Arg::new("default_name")
+                .short('D')
+                .long("set-default-name")
+                .num_args(1)
+                .help("Set default account username")
+                .long_help(
+                    "Modifies the name presented when the \
+                    default user account is used.",
+                ),
+        )
+        .arg(
+            Arg::new("new_account")
                 .short('N')
+                .long("new-account")
+                .conflicts_with("account")
+                .num_args(1)
+                .help("Create a new account")
+                .long_help("Creates and selects a new account with the given name."),
+        )
+        .arg(
+            Arg::new("dry_run")
+                .short('X')
                 .long("dry-run")
                 .action(ArgAction::SetTrue)
                 .help("Save no changes")
-                .long_help("Perform and output changes but do not save to file."),
+                .long_help(
+                    "Perform and output changes but do not save to file. \
+                    Redundant with -m.",
+                ),
         )
         .arg(
             Arg::new("interactive")
@@ -177,7 +201,8 @@ fn parse_args() -> ArgMatches {
                 .action(ArgAction::SetTrue)
                 .help("Enable the interactive interface")
                 .long_help(
-                    "Interactive mode. Implies -q, as it will not output upon exit. \
+                    "Interactive mode. Overrides all budget command arguments. \
+                    Implies -q, as it will not output upon exit. \
                     Include -v once to reverse this.",
                 ),
         )
