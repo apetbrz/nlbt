@@ -32,6 +32,7 @@ impl Budget {
     pub fn execute(&mut self, cmds: BudgetCommands, force: u8) -> Result<()> {
         use crate::commands::BudgetCommand as BC;
         for cmd in cmds {
+            #[cfg(debug_assertions)]
             println!("[DEV] executing command: {cmd:?}");
             match cmd {
                 BC::SetPaycheck { amount } => {
@@ -55,7 +56,7 @@ impl Budget {
                     new_name,
                     new_amount,
                 } => {
-                    todo!("exit existing expense")
+                    todo!("edit existing expense")
                 }
                 BC::NewExpense { name, amount } => {
                     self.add_expense(&name, amount);
