@@ -19,20 +19,20 @@ Usage: nclbt [OPTIONS]
 Options:
   -A, --account <account>                 Select account to load/modify
   -p, --pay <expense> <[amount]>          Pay an expense
-  -e, --edit <expense> <modification>...  Edit an existing expense
+  -e, --edit <expense> <modification>...  Edit an existing expense [unimpl.]
   -n, --new <expense> <amount>            Create a new expense
   -P, --paid [<amount>]                   Get paid
   -C, --set-paycheck <amount>             Set paycheck amount
-  -c, --clear [<expense>...]              Clear amount(s) paid to expense(s)
-  -f, --force...                          Force payments
+  -c, --clear [<expense>...]              Clear amount(s) paid to expense(s) [unimpl.]
+  -f, --force...                          Force payments [unimpl.]
   -D, --set-default-name <default_name>   Set default account username
   -N, --new-account <new_account>         Create a new account
   -X, --dry-run                           Save no changes
   -i, --interactive                       Enable the interactive interface
   -m, --mem-only                          Run without a save file
   -q, --quiet                             Silence output
-  -v, --verbose...                        Increase detail of output
-  -j, --json                              Output as json
+  -v, --verbose...                        Increase detail of output [unimpl.]
+  -j, --json                              Output as json [unimpl.]
   -h, --help                              Print help (see more with '--help')
   -V, --version                           Print version
 ```
