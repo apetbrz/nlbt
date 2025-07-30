@@ -23,10 +23,7 @@ const COMMANDS_LIST: &str = "=============={ nos' command-line budget tool }====
                             \tsave all: add the remaining balance into savings\n\
                             \tclear: clear the terminal\n\
                             \texit: close the app\n\
-                            ==============================================================\n\
-                            \tMANY FEATURES ARE NOT YET IMPLEMENTED!!!!\n\
-                            \tINCLUDING SAVING/LOADING!!!!!!!!!!!!!\n\
-                            ==============================================================\n";
+                            ==============================================================\n"
 
 pub fn run_interactive(bud: &mut budget::Budget) -> Result<()> {
     let term = Term::stdout();
