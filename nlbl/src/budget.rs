@@ -3,10 +3,12 @@ use crate::util::*;
 use crate::BudgetCommands;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use wasm_bindgen::prelude::*;
 
 // const AUTOMATIC_PAYMENT_PREFIX: char = '*';
 
 #[derive(Serialize, Deserialize, Debug)]
+#[wasm_bindgen(getter_with_clone)]
 pub struct Budget {
     pub account: String,
     current_balance: i32,
@@ -20,7 +22,7 @@ impl Budget {
     //TODO: SAVING/LOADING, accountS
     pub fn new(account: &str) -> Budget {
         Budget {
-            account: String::from(account),
+            account: account.into(),
             expected_income: 0,
             current_balance: 0,
             expected_expenses: HashMap::new(),
