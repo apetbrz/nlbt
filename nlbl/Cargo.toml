@@ -1,0 +1,22 @@
+[package]
+name = "nlbl"
+description = "nice little budget library"
+version = "0.0.4"
+authors = ["Arthur Petroff <apetbrz@gmail.com>"]
+edition = "2021"
+
+[lib]
+name = "nlbl"
+path = "src/lib.rs"
+crate-type = ["cdylib", "lib"]
+
+[dependencies]
+serde = { version = "1.0.219", features = ["derive"] }
+serde-wasm-bindgen = "0.6.5"
+serde_json = "1.0.141"
+thiserror = "2.0.12"
+wasm-bindgen = { version = "0.2.100", features = [
+    "serde",
+    "serde-serialize",
+    "serde_json",
+] }

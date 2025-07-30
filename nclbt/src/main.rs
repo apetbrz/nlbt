@@ -1,20 +1,43 @@
-mod budget;
-use budget::Budget;
-use error::Result;
 mod commands;
 mod error;
 mod fileio;
-mod ui;
 
 use clap::*;
-use commands::parse_input;
+use commands::*;
+use console::Term;
+use dialoguer::Input;
+use error::Result;
+use nlbl::{apply_budget_command, parse_command, Budget};
+
+const APP_TITLE: &str = "nclbt";
+const COMMAND_PROMPT: &str = ">>";
+const COMMANDS_LIST: &str = "=============={ nos' command-line budget tool }===============\n\
+                            ========{ everything in [square brackets] is a value }========\n\
+                            \thelp: shows this menu, lol!\n\
+                            \tincome set [amount]: sets your expected income\n\
+                            \tincome raise [amount]: adds to your income\n\
+                            \tpaid: receive your income\n\
+                            \tpaid [amount]: receive some amount\n\
+                            \tnew [name] [amount]: create a new expenditure\n\
+                            \t\t(overrides existing copies)\n\
+                            \t\t(prefix with \"*\" to make it automatic)\n\
+                            \tpay [name]: pay a static expenditure\n\
+                            \tpay [name] [amount]: pay some amount to an expenditure\n\
+                            \tsave [amount]: add an amount into savings\n\
+                            \tsave all: add the remaining balance into savings\n\
+                            \tclear: clear the terminal\n\
+                            \texit: close the app\n\
+                            ==============================================================\n";
 
 fn main() -> Result<()> {
-    //get arguments
-    let args = parse_args();
-
     //arguments -> options and commands
-    let (app_settings, account_options, budget_commands) = parse_input(args)?;
+    let (app_settings, account_options, budget_commands) = {
+        //get arguments
+        let args = parse_args();
+
+        //parse into structs
+        parse_input(args)?
+    };
 
     //move to working directory
     fileio::relocate_to_application_dir()?;
@@ -34,9 +57,9 @@ fn main() -> Result<()> {
 
     //process user commands
     match app_settings.interactive_mode {
-        true => ui::run_interactive(&mut bud),
-        false => bud.execute(budget_commands, app_settings.force),
-    }?;
+        true => run_interactive(&mut bud)?,
+        false => bud.execute(budget_commands, app_settings.force)?,
+    };
 
     //output after processing
     if app_settings.verbosity > 0 {
@@ -60,7 +83,7 @@ fn parse_args() -> ArgMatches {
     Command::new("nclbt")
         .version(crate_version!())
         .author(crate_authors!())
-        .about("nice command line budget tool")
+        .about(crate_description!())
         .arg(
             Arg::new("account")
                 .short('A')
@@ -248,4 +271,50 @@ fn parse_args() -> ArgMatches {
                 .long_help("Replaces output with a JSON object. Compatible with -v for more data."),
         )
         .get_matches()
+}
+
+// for use in CLI
+pub fn run_interactive(bud: &mut Budget) -> Result<()> {
+    let term = Term::stdout();
+    term.set_title(APP_TITLE);
+    term.clear_screen()?;
+
+    output(&term, &bud.to_string());
+    output(&term, ">>  tip: enter 'help' to get started!\n");
+
+    let mut user_input: String;
+    loop {
+        user_input = Input::<String>::new()
+            .with_prompt(COMMAND_PROMPT)
+            .interact_text()
+            .unwrap();
+
+        if user_input.trim() == "exit" || user_input.trim() == "q" {
+            break;
+        }
+
+        let result = {
+            || {
+                let cmd = parse_command(&user_input)?;
+                apply_budget_command(bud, cmd)
+            }
+        }();
+
+        term.clear_screen()?;
+
+        output(&term, &bud.to_string());
+
+        if let Err(e) = result {
+            output(&term, "error!");
+            output(&term, &e.to_string());
+        }
+    }
+
+    term.set_title("");
+
+    Ok(())
+}
+
+fn output(t: &Term, s: &str) {
+    t.write_line(s).expect("console-should-write");
 }

@@ -4,7 +4,7 @@ use std::fs::{self, File, OpenOptions};
 use std::io::{Read, Write};
 use std::path::Path;
 
-use crate::budget::Budget;
+use nlbl::Budget;
 
 //version 1 with initial release
 const SAVE_FORMAT_VERSION: u8 = 0;
