@@ -7,7 +7,7 @@ use commands::*;
 use console::Term;
 use dialoguer::Input;
 use error::Result;
-use nlbl::{apply_budget_command, parse_command, Budget};
+use nlbl::{parse_command, Budget};
 
 const APP_TITLE: &str = "nclbt";
 const COMMAND_PROMPT: &str = ">>";
@@ -58,7 +58,7 @@ fn main() -> Result<()> {
     //process user commands
     match app_settings.interactive_mode {
         true => run_interactive(&mut bud)?,
-        false => bud.execute(budget_commands, app_settings.force)?,
+        false => bud.execute_cmds(budget_commands, app_settings.force)?,
     };
 
     //output after processing
@@ -79,6 +79,7 @@ fn main() -> Result<()> {
     Ok(())
 }
 
+#[cfg(feature = "cli")]
 fn parse_args() -> ArgMatches {
     Command::new("nclbt")
         .version(crate_version!())
@@ -296,7 +297,7 @@ pub fn run_interactive(bud: &mut Budget) -> Result<()> {
         let result = {
             || {
                 let cmd = parse_command(&user_input)?;
-                apply_budget_command(bud, cmd)
+                bud.execute_cmd(cmd, 0)
             }
         }();
 

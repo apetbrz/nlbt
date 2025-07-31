@@ -1,7 +1,11 @@
 use crate::{Error, Result};
 
+#[cfg(feature = "wasm")]
+use wasm_bindgen::prelude::*;
+
 //format_dollars(): takes an amount of cents and formats it to ${X}+.XX
-pub fn format_dollars(cents: &i32) -> String {
+#[cfg_attr(feature = "wasm", wasm_bindgen)]
+pub fn format_dollars(cents: i32) -> String {
     let cents = { cents.to_string() };
     let dollars = match cents.len() {
         3.. => cents.split_at(cents.len() - 2),
@@ -24,6 +28,7 @@ pub fn dollars_to_cents(dollars: f32) -> i32 {
 }
 
 //parse_dollar_string(): takes a string literal and returns an integer cent amount if valid, or error message if not
+#[cfg_attr(feature = "wasm", wasm_bindgen)]
 pub fn parse_dollar_string(s: &str) -> Result<i32> {
     if s.is_empty() {
         return Err(Error::InvalidDollarValue(s.into()));

@@ -381,15 +381,6 @@ dependencies = [
  "console",
  "dialoguer",
  "dirs",
- "nlbl",
- "serde",
- "thiserror 2.0.12",
-]
-
-[[package]]
-name = "nlbl"
-version = "0.0.4"
-dependencies = [
  "serde",
  "serde-wasm-bindgen",
  "serde_json",

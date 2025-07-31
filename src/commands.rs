@@ -1,4 +1,5 @@
-use nlbl::{error::Result, util, BudgetCommand, BudgetCommands};
+use crate::error::Result;
+use nlbl::{util, BudgetCommand, BudgetCommands};
 
 #[derive(Debug)]
 pub struct AppSettings {

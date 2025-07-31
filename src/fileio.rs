@@ -65,24 +65,20 @@ pub fn load_budget_account(account: &str) -> Result<Budget> {
 
     //TODO: sanity check, check app name, format version, etc
 
-    Ok(
-        bson::from_slice(&save.data).map_err(|e| Error::SaveBinaryCorrupted {
-            account: account.into(),
-            cause: e,
-        })?,
-    )
+    bson::from_slice(&save.data).map_err(|e| Error::SaveBinaryCorrupted {
+        account: account.into(),
+        cause: e,
+    })
 }
 
 //returns SaveFormat object from given account's save file
 fn access_account_save_from_file(account: &str, mut file: File) -> Result<SaveFormat> {
     let mut bytes: Vec<u8> = Vec::new();
     file.read_to_end(&mut bytes)?;
-    Ok(
-        bson::from_slice(&bytes).map_err(|e| Error::SaveBinaryCorrupted {
-            account: account.into(),
-            cause: e,
-        })?,
-    )
+    bson::from_slice(&bytes).map_err(|e| Error::SaveBinaryCorrupted {
+        account: account.into(),
+        cause: e,
+    })
 }
 
 //returns File for given account
@@ -120,12 +116,10 @@ pub fn create_new_budget_account(account: &str) -> Result<Budget> {
     file.write_all(save.bytes().as_slice())?;
     file.flush()?;
 
-    Ok(
-        bson::from_slice(&save.data).map_err(|e| Error::SaveBinaryCorrupted {
-            account: account.into(),
-            cause: e,
-        })?,
-    )
+    bson::from_slice(&save.data).map_err(|e| Error::SaveBinaryCorrupted {
+        account: account.into(),
+        cause: e,
+    })
 }
 
 //creates and returns an empty save file

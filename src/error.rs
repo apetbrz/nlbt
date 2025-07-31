@@ -11,7 +11,7 @@ pub enum Error {
     #[error("not a save file: {file}")]
     SaveFormatMismatch { file: String },
     #[error("budget error: {0}")]
-    BudgetError(#[from] nlbl::error::Error),
+    BudgetFailure(#[from] nlbl::error::Error),
 }
 
 pub type Result<T> = core::result::Result<T, Error>;

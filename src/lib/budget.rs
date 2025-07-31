@@ -1,14 +1,15 @@
 use crate::error::{Error, Result};
-use crate::util::*;
-use crate::BudgetCommands;
+use crate::{parse_command, util::*};
+use crate::{BudgetCommand, BudgetCommands};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+#[cfg(feature = "wasm")]
 use wasm_bindgen::prelude::*;
 
 // const AUTOMATIC_PAYMENT_PREFIX: char = '*';
 
-#[derive(Serialize, Deserialize, Debug)]
-#[wasm_bindgen(getter_with_clone)]
+#[cfg_attr(feature = "wasm", wasm_bindgen(getter_with_clone))]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Budget {
     pub account: String,
     current_balance: i32,
@@ -17,9 +18,10 @@ pub struct Budget {
     current_expenses: HashMap<String, i32>,
     savings: i32,
 }
+#[cfg_attr(feature = "wasm", wasm_bindgen)]
 impl Budget {
     //new(): factory method, returning a new Budget
-    //TODO: SAVING/LOADING, accountS
+    #[cfg_attr(feature = "wasm", wasm_bindgen(constructor))]
     pub fn new(account: &str) -> Budget {
         Budget {
             account: account.into(),
@@ -30,75 +32,116 @@ impl Budget {
             savings: 0,
         }
     }
+    //stringify: WASM interface for Display
+    #[cfg(feature = "wasm")]
+    #[wasm_bindgen]
+    pub fn stringify(&self) -> String {
+        self.to_string()
+    }
 
-    #[allow(unused_variables)]
-    pub fn execute(&mut self, cmds: BudgetCommands, force: u8) -> Result<()> {
-        use crate::BudgetCommand as BC;
+    #[cfg_attr(feature = "wasm", wasm_bindgen)]
+    pub fn json(&self) -> Result<String> {
+        Ok(serde_json::to_string(self)?)
+    }
+
+    #[cfg(feature = "wasm")]
+    #[wasm_bindgen]
+    pub fn as_obj(&self) -> Result<JsValue> {
+        //TODO: WHY IS IT NOT RECURSIVE???
+        Ok(serde_wasm_bindgen::to_value(self)?)
+    }
+
+    //for WASM, avoid inner mutation
+    #[cfg_attr(feature = "wasm", wasm_bindgen)]
+    pub fn execute_string_immut(self, input: &str) -> Result<Budget> {
+        let mut out = self.clone();
+        let cmd = parse_command(input)?;
+        out.execute_cmd(cmd, 0)?;
+        Ok(out)
+    }
+
+    pub fn execute_string_mut(&mut self, input: &str) -> Result<()> {
+        let cmd = parse_command(input)?;
+        self.execute_cmd(cmd, 0)
+    }
+}
+impl Budget {
+    pub fn execute_cmds(&mut self, cmds: BudgetCommands, force: u8) -> Result<()> {
         for cmd in cmds {
-            #[cfg(debug_assertions)]
-            println!("[DEV] executing command: {cmd:?}");
-            match cmd {
-                BC::SetPaycheck { amount } => {
-                    self.set_income(amount);
-                }
-                BC::Paid { amount } => {
-                    if let Some(c) = amount {
-                        self.get_paid_value(c);
-                    } else {
-                        self.get_paid();
-                    }
-                }
-                BC::ClearExpense {
-                    targets,
-                    invert_selection,
-                } => {
-                    todo!("clear expenses")
-                }
-                BC::EditExpense {
-                    target,
-                    new_name,
-                    new_amount,
-                } => {
-                    todo!("edit existing expense")
-                }
-                BC::NewExpense { name, amount } => {
-                    self.add_expense(&name, amount);
-                }
-                BC::PayExpense { name, amount } => {
-                    if let Some(c) = amount {
-                        self.make_dynamic_payment(&name, c)?;
-                    } else {
-                        self.make_static_payment(&name)?;
-                    }
-                }
-                BC::Nothing => {}
+            self.execute_cmd(cmd, force)?
+        }
+        Ok(())
+    }
+    pub fn execute_cmd(&mut self, cmd: BudgetCommand, force: u8) -> Result<()> {
+        //TODO: IMPLEMENT force VALUE
+        use crate::BudgetCommand as BC;
+        #[cfg(debug_assertions)]
+        println!("[DEV] executing command: {cmd:?}");
+        match cmd {
+            BC::SetPaycheck { amount } => {
+                self.set_income(amount);
             }
+            BC::Paid { amount } => {
+                if let Some(c) = amount {
+                    self.get_paid_value(c);
+                } else {
+                    self.get_paid();
+                }
+            }
+            BC::ClearExpense {
+                targets,
+                invert_selection,
+            } => {
+                if targets.is_empty() && !invert_selection {
+                    self.refresh();
+                } else {
+                    todo!("clear command expense selection")
+                }
+            }
+            BC::EditExpense {
+                target,
+                new_name,
+                new_amount,
+            } => {
+                todo!("edit existing expense")
+            }
+            BC::NewExpense { name, amount } => {
+                self.add_expense(&name, amount);
+            }
+            BC::PayExpense { name, amount } => {
+                if let Some(c) = amount {
+                    self.make_dynamic_payment(&name, c)?;
+                } else {
+                    self.make_static_payment(&name)?;
+                }
+            }
+            BC::Nothing => {}
         }
         Ok(())
     }
 
     //set_income(): sets expected_income to the new value
-    pub fn set_income(&mut self, cents: i32) {
+    fn set_income(&mut self, cents: i32) {
         self.expected_income = cents;
     }
 
     //add_income(): adds new value to expected_income
-    pub fn add_income(&mut self, cents: i32) {
+    fn add_income(&mut self, cents: i32) {
         self.set_income(self.expected_income + cents);
     }
 
     //get_paid(): adds expected_income to current_balance
-    pub fn get_paid(&mut self) {
+    fn get_paid(&mut self) {
         self.get_paid_value(self.expected_income)
     }
 
     //get_paid_value(): adds given value to current_balance
-    pub fn get_paid_value(&mut self, cents: i32) {
+    fn get_paid_value(&mut self, cents: i32) {
         self.current_balance += cents;
     }
 
     //refresh(): resets current_expenses
-    pub fn refresh(&mut self) {
+    fn refresh(&mut self) {
         for key in self.current_expenses.iter_mut() {
             *key.1 = 0;
         }
@@ -131,7 +174,7 @@ impl Budget {
     */
 
     //add_expense(): creates a new expense in both HashMaps, with the new value as the expected value in expected_expenses
-    pub fn add_expense(&mut self, name: &str, cents: i32) {
+    fn add_expense(&mut self, name: &str, cents: i32) {
         self.expected_expenses
             .insert(name.to_string().to_ascii_lowercase(), cents);
         self.current_expenses
@@ -139,7 +182,7 @@ impl Budget {
     }
 
     //make_static_payment(): makes a payment into current_expenses, with the value from expected_expenses
-    pub fn make_static_payment(&mut self, name: &str) -> Result<String> {
+    fn make_static_payment(&mut self, name: &str) -> Result<String> {
         match self.expected_expenses.get(name) {
             Some(n) => self.make_dynamic_payment(name, *n),
             None => Err(Error::ExpenseDoesNotExist(name.into())),
@@ -147,7 +190,7 @@ impl Budget {
     }
 
     //make_dynamic_payment(): makes a payment into current_expenses, with the given value
-    pub fn make_dynamic_payment(&mut self, name: &str, cents: i32) -> Result<String> {
+    fn make_dynamic_payment(&mut self, name: &str, cents: i32) -> Result<String> {
         let name = name.to_ascii_lowercase();
         if let Some(n) = self.current_expenses.get_mut(&name) {
             self.current_balance -= cents;
@@ -158,13 +201,13 @@ impl Budget {
 
         Ok(format!(
             "Payment made: {} to {}",
-            format_dollars(&cents),
+            format_dollars(cents),
             to_title_case(name)
         ))
     }
 
     //save(): adds the given amount into savings
-    pub fn save(&mut self, cents: i32) -> Result<String> {
+    fn save(&mut self, cents: i32) -> Result<String> {
         if self.current_balance < cents {
             Err(Error::CannotAfford {
                 expense: "savings".into(),
@@ -174,12 +217,12 @@ impl Budget {
         } else {
             self.current_balance -= cents;
             self.savings += cents;
-            Ok(format!("{} saved!", format_dollars(&cents)))
+            Ok(format!("{} saved!", format_dollars(cents)))
         }
     }
 
     //save_all(): moves current_balance to savings
-    pub fn save_all(&mut self) -> Result<String> {
+    fn save_all(&mut self) -> Result<String> {
         self.save(self.current_balance)
     }
 }
@@ -188,9 +231,9 @@ impl std::fmt::Display for Budget {
     //TODO: better?? lol
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "==={{ Welcome, {}! }}===", self.account)?;
-        writeln!(f, "Balance: {}", format_dollars(&self.current_balance))?;
-        writeln!(f, "Income: {}", format_dollars(&self.expected_income))?;
-        writeln!(f, "Savings: {}", format_dollars(&self.savings))?;
+        writeln!(f, "Balance: {}", format_dollars(self.current_balance))?;
+        writeln!(f, "Income: {}", format_dollars(self.expected_income))?;
+        writeln!(f, "Savings: {}", format_dollars(self.savings))?;
         writeln!(f, "\nExpenses:")?;
 
         let mut loop_output: std::fmt::Result = Ok(());
@@ -206,8 +249,8 @@ impl std::fmt::Display for Budget {
                 f,
                 "{}: {}/{}",
                 category_name,
-                format_dollars(current_amount),
-                format_dollars(key.1)
+                format_dollars(*current_amount),
+                format_dollars(*key.1)
             );
             if loop_output.is_err() {
                 break;
