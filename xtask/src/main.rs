@@ -61,9 +61,12 @@ fn build_wasm() -> Result<(), Box<dyn Error>> {
         Err("cargo build failed")?;
     }
 
+    let outdir = env::args().nth(2).unwrap_or("./pkg/".into());
+
     let status = Command::new("wasm-bindgen")
         .args([
-            "--out-dir=./pkg",
+            "--out-dir",
+            &outdir,
             "./target/wasm32-unknown-unknown/release/nlbl.wasm",
         ])
         .status()?;
@@ -73,7 +76,7 @@ fn build_wasm() -> Result<(), Box<dyn Error>> {
     }
 
     println!("\nwasm bundled into: ");
-    Command::new("realpath").args(["pkg"]).status()?;
+    Command::new("realpath").args([outdir]).status()?;
 
     Ok(())
 }
