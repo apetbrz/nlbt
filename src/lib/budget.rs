@@ -53,7 +53,7 @@ impl Budget {
 
     //for WASM, avoid inner mutation
     #[cfg_attr(feature = "wasm", wasm_bindgen)]
-    pub fn execute_string_immut(self, input: &str) -> Result<Budget> {
+    pub fn execute_string_immut(&self, input: &str) -> Result<Budget> {
         let mut out = self.clone();
         let cmd = parse_command(input)?;
         out.execute_cmd(cmd, 0)?;
