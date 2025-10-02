@@ -33,79 +33,77 @@ pub enum BudgetCommand {
         //None = full amount
         amount: Option<i32>,
     },
+    Savings {
+        //None = full amount
+        amount: Option<i32>,
+    },
     Nothing,
 }
 
 pub type BudgetCommands = Vec<BudgetCommand>;
+impl From<BudgetCommand> for BudgetCommands {
+    fn from(cmd: BudgetCommand) -> Self {
+        vec![cmd]
+    }
+}
 
-pub fn parse_command(input: &str) -> Result<BudgetCommand> {
-    use BudgetCommand as BC;
+pub fn execute_cmd(bud: Budget, cmd: BudgetCommand, force: u8) -> Result<Budget> {
+    execute_cmds(bud, cmd.into(), force)
+}
 
-    let command = input.split_whitespace();
-    let command: Vec<&str> = command.collect();
+pub fn execute_cmds(mut bud: Budget, cmds: BudgetCommands, force: u8) -> Result<Budget> {
+    //TODO: IMPLEMENT force VALUE
+    use crate::BudgetCommand as BC;
 
-    let cmd = match *command.first().unwrap_or(&"") {
-        "help" => {
-            help();
-            BC::Nothing
-        }
-        "income" => match *command.get(1).unwrap_or(&"") {
-            "set" => {
-                let amount = *command.get(2).ok_or(Error::InvalidCommand("new".into()))?;
-                let amount = util::parse_dollar_string(amount)?;
-                BC::SetPaycheck { amount }
+    for cmd in cmds {
+        #[cfg(debug_assertions)]
+        println!("[DEV] executing command: {cmd:?}");
+
+        match cmd {
+            BC::SetPaycheck { amount } => {
+                bud.set_income(amount);
             }
-            "raise" => {
-                todo!("raise income command!");
-                let amount = *command.get(2).ok_or(Error::InvalidCommand("new".into()))?;
-                let amount = util::parse_dollar_string(amount)?;
+            BC::Paid { amount } => {
+                match amount {
+                    Some(c) => bud.get_paid_value(c),
+                    None => bud.get_paid(),
+                };
             }
-            other => Err(Error::InvalidCommand(other.into()))?,
-        },
-        "paid" => match *command.get(1).unwrap_or(&"") {
-            "" => BC::Paid { amount: None },
-            val => {
-                let amount = util::parse_dollar_string(val)?;
-                BC::Paid {
-                    amount: Some(amount),
+            BC::ClearExpense {
+                targets,
+                invert_selection,
+            } => {
+                if targets.is_empty() && !invert_selection {
+                    bud.refresh();
+                } else {
+                    todo!("clear command expense selection")
                 }
             }
-        },
-        "new" => {
-            let name = String::from(*command.get(1).ok_or(Error::InvalidCommand("new".into()))?);
-            let amount = *command.get(2).ok_or(Error::InvalidCommand("new".into()))?;
-            let amount = util::parse_dollar_string(amount)?;
-            BC::NewExpense { name, amount }
-        }
-        "pay" => {
-            let name = String::from(*command.get(1).ok_or(Error::InvalidCommand("pay".into()))?);
-            match *command.get(2).unwrap_or(&"") {
-                "" => BC::PayExpense { name, amount: None },
-                val => {
-                    let amount = util::parse_dollar_string(val)?;
-                    BC::PayExpense {
-                        name,
-                        amount: Some(amount),
-                    }
-                }
+            BC::EditExpense {
+                target,
+                new_name,
+                new_amount,
+            } => {
+                todo!("edit existing expense")
             }
+            BC::NewExpense { name, amount } => {
+                bud.add_expense(&name, amount);
+            }
+            BC::PayExpense { name, amount } => {
+                match amount {
+                    Some(c) => bud.make_dynamic_payment(&name, c)?,
+                    None => bud.make_static_payment(&name)?,
+                };
+            }
+            BC::Savings { amount } => {
+                match amount {
+                    Some(c) => bud.save(c)?,
+                    None => bud.save_all()?,
+                };
+            }
+            BC::Nothing => {}
         }
-        "save" => {
-            todo!("savings!");
-            // match command[1] {
-            // "" => Err(Error::InvalidCommand("empty save amount".into()))?,
-            // "all" => bud.save_all(),
-            // _ => {
-            //     let amount = util::parse_dollar_string(command[1])?;
-            //     bud.save(amount)
-            // }
-        }
-        // "clear" => match term.clear_screen() {
-        //     Ok(()) => Ok(String::new()),
-        //     Err(e) => Err(Error::IoFailure(e)),
-        // },
-        cmd => return Err(Error::InvalidCommand(cmd.into()))?,
-    };
+    }
 
-    Ok(cmd)
+    Ok(bud)
 }

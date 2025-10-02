@@ -1,7 +1,11 @@
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
+    #[error("invalid command error: ")]
+    InvalidCommand(String),
     #[error("i/o failure: {0}")]
     IoFailure(#[from] std::io::Error),
+    #[error("save file not found")]
+    NoAccountFound(String),
     #[error("corrupted save file for {account}\n{cause}")]
     SaveBinaryCorrupted {
         account: String,

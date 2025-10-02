@@ -1,3 +1,4 @@
+use crate::commands::AppConfig;
 use crate::error::{Error, Result};
 use serde::{Deserialize, Serialize};
 use std::fs::{self, File, OpenOptions};
@@ -57,6 +58,35 @@ impl SaveFormat {
 }
 
 // -- LOADING --
+
+pub fn handle_account_load(cfg: &AppConfig) -> Result<Budget> {
+    //rename default account if needed
+    cfg.account_options
+        .default_rename
+        .as_ref()
+        .map(|new_name| change_default_account_display_name(new_name))
+        .unwrap_or(Ok(()))?;
+
+    let bud = if cfg.app_settings.mem_only {
+        Budget::new(
+            cfg.account_options
+                .account
+                .as_ref()
+                .map(|s| s.as_str())
+                .unwrap_or("default"),
+        )
+    } else {
+        match &cfg.account_options.account {
+            Some(acc) => match cfg.account_options.create {
+                true => create_new_budget_account(acc)?,
+                false => load_budget_account(acc)?,
+            },
+            None => load_budget_account("default").unwrap_or(create_new_budget_account("default")?),
+        }
+    };
+
+    Ok(bud)
+}
 
 //take in an account name and return the appropriate Budget object
 pub fn load_budget_account(account: &str) -> Result<Budget> {
@@ -137,7 +167,6 @@ pub fn make_new_account_file(account: &str) -> Result<File> {
 
 // -- EDITING --
 
-//
 pub fn change_account_display_name(account: &str, new_name: &str) -> Result<()> {
     let mut bud = load_budget_account(account)?;
     bud.account = String::from(new_name);
@@ -160,7 +189,7 @@ fn open_account_file_for_editing(account: &str) -> Result<File> {
 // -- APP DIR --
 
 //move active directory into application directory in system-dependent user data dir
-pub fn relocate_to_application_dir() -> Result<()> {
+pub fn relocate_to_working_dir() -> Result<()> {
     //get OS-dependent user data dir and append package folder
     let working_dir = dirs::data_local_dir()
         .unwrap_or_else(|| panic!("Unsupported Operating System"))
