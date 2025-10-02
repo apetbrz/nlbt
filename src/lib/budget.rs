@@ -3,12 +3,9 @@ use crate::{parse_command, util::*};
 use crate::{BudgetCommand, BudgetCommands};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-#[cfg(feature = "wasm")]
-use wasm_bindgen::prelude::*;
 
 // const AUTOMATIC_PAYMENT_PREFIX: char = '*';
 
-#[cfg_attr(feature = "wasm", wasm_bindgen(getter_with_clone))]
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Budget {
     pub account: String,
@@ -18,10 +15,8 @@ pub struct Budget {
     current_expenses: HashMap<String, i32>,
     savings: i32,
 }
-#[cfg_attr(feature = "wasm", wasm_bindgen)]
 impl Budget {
     //new(): factory method, returning a new Budget
-    #[cfg_attr(feature = "wasm", wasm_bindgen(constructor))]
     pub fn new(account: &str) -> Budget {
         Budget {
             account: account.into(),
@@ -32,37 +27,9 @@ impl Budget {
             savings: 0,
         }
     }
-    //stringify: WASM interface for Display
-    #[cfg(feature = "wasm")]
-    #[wasm_bindgen]
-    pub fn stringify(&self) -> String {
-        self.to_string()
-    }
 
-    #[cfg_attr(feature = "wasm", wasm_bindgen)]
     pub fn json(&self) -> Result<String> {
         Ok(serde_json::to_string(self)?)
-    }
-
-    #[cfg(feature = "wasm")]
-    #[wasm_bindgen]
-    pub fn as_obj(&self) -> Result<JsValue> {
-        //TODO: WHY IS IT NOT RECURSIVE???
-        Ok(serde_wasm_bindgen::to_value(self)?)
-    }
-
-    //for WASM, avoid inner mutation
-    #[cfg_attr(feature = "wasm", wasm_bindgen)]
-    pub fn execute_string_immut(&self, input: &str) -> Result<Budget> {
-        let mut out = self.clone();
-        let cmd = parse_command(input)?;
-        out.execute_cmd(cmd, 0)?;
-        Ok(out)
-    }
-
-    pub fn execute_string_mut(&mut self, input: &str) -> Result<()> {
-        let cmd = parse_command(input)?;
-        self.execute_cmd(cmd, 0)
     }
 }
 impl Budget {

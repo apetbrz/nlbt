@@ -3,8 +3,6 @@ pub mod error;
 pub mod util;
 
 use error::{Error, Result};
-#[cfg(feature = "wasm")]
-use wasm_bindgen::prelude::*;
 
 pub type Budget = budget::Budget;
 
@@ -39,22 +37,6 @@ pub enum BudgetCommand {
 }
 
 pub type BudgetCommands = Vec<BudgetCommand>;
-
-#[cfg(feature = "wasm")]
-#[wasm_bindgen]
-extern "C" {
-    fn alert(s: &str);
-}
-
-#[cfg_attr(feature = "wasm", wasm_bindgen)]
-pub fn help() -> String {
-    let str = "[help info goes here]";
-
-    #[cfg(feature = "wasm")]
-    alert(str);
-
-    str.into()
-}
 
 pub fn parse_command(input: &str) -> Result<BudgetCommand> {
     use BudgetCommand as BC;
