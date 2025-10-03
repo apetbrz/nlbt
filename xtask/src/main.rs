@@ -33,7 +33,7 @@ fn build_cli() -> Result<(), Box<dyn Error>> {
     let cargo = env::var("CARGO").unwrap_or_else(|_| "cargo".to_string());
 
     let status = Command::new(cargo)
-        .args(["build", "--release", "--bin=nclbt"])
+        .args(["build", "--release", "--bin=nlbt"])
         .status()?;
 
     if !status.success() {

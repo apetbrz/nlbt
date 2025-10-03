@@ -6,7 +6,7 @@ use clap::*;
 use console::Term;
 use dialoguer::Input;
 
-const APP_TITLE: &str = "nclbt";
+const APP_TITLE: &str = "nlbt";
 const COMMAND_PROMPT: &str = ">>";
 const COMMANDS_LIST: &str = "=============={ nos' command-line budget tool }===============\n\
                             ========{ everything in [square brackets] is a value }========\n\
@@ -32,7 +32,7 @@ pub fn init_settings() -> Result<AppConfig> {
 }
 
 pub fn parse_args() -> ArgMatches {
-    Command::new("nclbt")
+    Command::new("nlbt")
         .version(crate_version!())
         .author(crate_authors!())
         .about(crate_description!())

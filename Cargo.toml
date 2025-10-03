@@ -1,5 +1,5 @@
 [package]
-name = "nclbt"
+name = "nlbt"
 description = "nice command-line budget tool"
 version = "0.0.4"
 authors = ["Arthur Petroff <apetbrz@gmail.com>"]
@@ -11,7 +11,7 @@ path = "src/lib/lib.rs"
 crate-type = ["cdylib", "lib"]
 
 [[bin]]
-name = "nclbt"
+name = "nlbt"
 path = "src/main.rs"
 required-features = ["cli"]
 

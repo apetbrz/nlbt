@@ -1,4 +1,4 @@
-# nclbt
+# nlbt
 
 ## nice' command-line budget tool
 
@@ -11,10 +11,10 @@ Currently in-development.
 ### usage:
 
 ```
-> ./nclbt -h
+> ./nlbt -h
 nice command line budget tool
 
-Usage: nclbt [OPTIONS]
+Usage: nlbt [OPTIONS]
 
 Options:
   -A, --account <account>                 Select account to load/modify
