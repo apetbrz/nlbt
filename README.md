@@ -1,6 +1,6 @@
 # nlbt
 
-## nice' command-line budget tool
+## nice little budget tool
 
 A simple budget tool, for tracking expenses.
 
@@ -12,7 +12,7 @@ Currently in-development.
 
 ```
 > ./nlbt -h
-nice command line budget tool
+nice little budget tool
 
 Usage: nlbt [OPTIONS]
 
