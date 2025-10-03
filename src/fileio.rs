@@ -97,10 +97,18 @@ pub fn load_budget_account(account: &str) -> Result<Budget> {
 fn access_account_save_from_file(account: &str, mut file: File) -> Result<SaveFormat> {
     let mut bytes: Vec<u8> = Vec::new();
     file.read_to_end(&mut bytes)?;
-    bson::from_slice(&bytes).map_err(|e| Error::SaveBinaryCorrupted {
+    let save: SaveFormat = bson::from_slice(&bytes).map_err(|e| Error::SaveBinaryCorrupted {
         account: account.into(),
         cause: e,
-    })
+    })?;
+
+    if save.save_format == SAVE_FORMAT_VERSION {
+        Ok(save)
+    } else {
+        Err(Error::SaveFormatMismatch {
+            file: account.into(),
+        })
+    }
 }
 
 //returns File for given account
