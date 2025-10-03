@@ -1,5 +1,6 @@
 use crate::error::{Error, Result};
 use crate::util::*;
+
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -52,8 +53,15 @@ impl Budget {
         self.current_balance += cents;
     }
 
+    pub fn clear_expense(&mut self, name: &str) -> Result<()> {
+        self.current_expenses
+            .get_mut(name)
+            .ok_or(Error::ExpenseDoesNotExist(name.into()))
+            .map(|c| *c = 0)
+    }
+
     //refresh(): resets current_expenses
-    pub fn refresh(&mut self) {
+    pub fn full_refresh(&mut self) {
         for key in self.current_expenses.iter_mut() {
             *key.1 = 0;
         }
@@ -91,6 +99,28 @@ impl Budget {
             .insert(name.to_string().to_ascii_lowercase(), cents);
         self.current_expenses
             .insert(name.to_string().to_ascii_lowercase(), 0);
+    }
+
+    pub fn edit_expense(&mut self, name: &str, cents: i32) -> Result<()> {
+        self.expected_expenses
+            .get_mut(name)
+            .ok_or(Error::ExpenseDoesNotExist(name.into()))
+            .map(|c| *c = cents)
+    }
+
+    pub fn rename_expense(&mut self, name: &str, new_name: &str) -> Result<()> {
+        let amount = self
+            .expected_expenses
+            .remove(name)
+            .ok_or(Error::ExpenseDoesNotExist(name.into()))?;
+        self.expected_expenses.insert(new_name.into(), amount);
+
+        let amount = self
+            .current_expenses
+            .remove(name)
+            .ok_or(Error::ExpenseDoesNotExist(name.into()))?;
+        self.current_expenses.insert(new_name.into(), amount);
+        Ok(())
     }
 
     //make_static_payment(): makes a payment into current_expenses, with the value from expected_expenses

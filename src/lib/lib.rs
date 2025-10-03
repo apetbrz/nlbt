@@ -76,7 +76,14 @@ pub fn execute_cmds(mut bud: Budget, cmds: BudgetCommands, force: u8) -> Result<
                 if targets.is_empty() {
                     bud.full_refresh();
                 } else {
-                    todo!("clear command expense selection")
+                    match invert_selection {
+                        false => {
+                            for exp in targets {
+                                bud.clear_expense(exp.as_str())?;
+                            }
+                        }
+                        true => todo!("clear command selection inversion"),
+                    }
                 }
             }
             BC::EditExpense {
@@ -84,7 +91,12 @@ pub fn execute_cmds(mut bud: Budget, cmds: BudgetCommands, force: u8) -> Result<
                 new_name,
                 new_amount,
             } => {
-                todo!("edit existing expense")
+                if let Some(amount) = new_amount {
+                    bud.edit_expense(&target, amount)?;
+                }
+                if let Some(new_name) = new_name {
+                    bud.rename_expense(&target, &new_name)?;
+                }
             }
             BC::NewExpense { name, amount } => {
                 bud.add_expense(&name, amount);

@@ -267,19 +267,19 @@ pub fn parse_settings(args: clap::ArgMatches) -> Result<AppConfig> {
         .iter()
         //do not process commands that arent present in args
         .filter(|id| args.contains_id(id))
+        //for each command...
         .flat_map(|id| {
-            //get Occurrences from args and...
-            args.get_occurrences(id).unwrap().filter_map(|arg_iter| {
-                //turn them into BudgetCommands
-                command_from_arg(id, arg_iter)
-                    .map_err(|e| {
-                        println!("{e}");
-                        e
-                    })
-                    .ok()
+            //get every time the command shows up in args...
+            //safely unwrap thanks to filter()
+            args.get_occurrences(id).unwrap().map(move |occ| {
+                //and turn them into BudgetCommands
+                command_from_arg(id, occ).map_err(|e| {
+                    println!("{e}");
+                    e
+                })
             })
         })
-        .collect::<BudgetCommands>();
+        .collect::<Result<Vec<_>>>()?;
 
     #[cfg(debug_assertions)]
     {
@@ -302,6 +302,10 @@ pub fn parse_command(input: &str) -> Result<BudgetCommand> {
     let command: Vec<&str> = command.collect();
 
     let cmd = match *command.first().unwrap_or(&"") {
+        "help" => {
+            println!("{COMMANDS_LIST}");
+            BC::Nothing
+        }
         "income" => match *command.get(1).unwrap_or(&"") {
             "set" => {
                 let amount = *command.get(2).ok_or(Error::InvalidCommand("new".into()))?;

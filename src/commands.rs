@@ -26,7 +26,7 @@ pub struct AccountOptions {
 //TODO: take arg string directly from arg builder!!!! avoid hardcoded strings!!!
 pub fn command_from_arg<'a>(
     arg: &str,
-    mut vals: impl Iterator<Item = &'a String>,
+    mut vals: impl Iterator<Item = &'a String> + Clone,
 ) -> Result<BudgetCommand> {
     use BudgetCommand as BC;
     //TODO: manage unwraps!!
@@ -43,8 +43,21 @@ pub fn command_from_arg<'a>(
             BC::Paid { amount }
         }
         "clear" => {
-            //BC::ClearExpense(vals.next().unwrap().into(), vals.next().cloned(), false)
-            todo!("'clear' command")
+            let mut inv = false;
+
+            let targets = vals
+                .inspect(|s| {
+                    if s.starts_with("!") {
+                        inv = true
+                    }
+                })
+                //i hate that this is cloned()
+                .cloned()
+                .collect();
+            BC::ClearExpense {
+                targets,
+                invert_selection: inv,
+            }
         }
         "edit" => {
             let target: String = vals.next().unwrap().into();
