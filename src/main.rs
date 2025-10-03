@@ -3,21 +3,18 @@ mod commands;
 mod error;
 mod fileio;
 
-use error::{Error, Result};
-use nlbl::*;
-
-use crate::commands::AppConfig;
+use error::Result;
 
 fn main() -> Result<()> {
-    let cfg = cli::init_settings()?;
+    let cfg = cli::init_app()?;
 
     fileio::relocate_to_working_dir()?;
 
-    let loaded_budget = fileio::handle_account_load(&cfg)?;
+    let loaded_budget: nlbl::Budget = fileio::handle_account_load(&cfg)?;
 
     let worked_budget = match cfg.app_settings.interactive_mode {
         true => cli::run_interactive(loaded_budget.clone())?,
-        false => execute_cmds(
+        false => nlbl::execute_cmds(
             loaded_budget.clone(),
             cfg.budget_commands,
             cfg.app_settings.force,

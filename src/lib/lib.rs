@@ -52,7 +52,7 @@ pub fn execute_cmd(bud: Budget, cmd: BudgetCommand, force: u8) -> Result<Budget>
 }
 
 pub fn execute_cmds(mut bud: Budget, cmds: BudgetCommands, force: u8) -> Result<Budget> {
-    //TODO: IMPLEMENT force VALUE
+    //TODO: IMPLEMENT CHECKS AND force VALUE
     use crate::BudgetCommand as BC;
 
     for cmd in cmds {
@@ -73,8 +73,8 @@ pub fn execute_cmds(mut bud: Budget, cmds: BudgetCommands, force: u8) -> Result<
                 targets,
                 invert_selection,
             } => {
-                if targets.is_empty() && !invert_selection {
-                    bud.refresh();
+                if targets.is_empty() {
+                    bud.full_refresh();
                 } else {
                     todo!("clear command expense selection")
                 }

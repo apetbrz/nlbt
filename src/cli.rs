@@ -26,7 +26,7 @@ const COMMANDS_LIST: &str = "=============={ nos' command-line budget tool }====
                             \texit: close the app\n\
                             ==============================================================\n";
 
-pub fn init_settings() -> Result<AppConfig> {
+pub fn init_app() -> Result<AppConfig> {
     let args = parse_args();
     parse_settings(args)
 }
@@ -262,11 +262,15 @@ pub fn parse_settings(args: clap::ArgMatches) -> Result<AppConfig> {
         default_rename,
     };
 
+    //parse commands from args with this order ->
     let budget_commands: BudgetCommands = ["paycheck", "paid", "clear", "edit", "new", "pay"]
         .iter()
+        //do not process commands that arent present in args
         .filter(|id| args.contains_id(id))
         .flat_map(|id| {
+            //get Occurrences from args and...
             args.get_occurrences(id).unwrap().filter_map(|arg_iter| {
+                //turn them into BudgetCommands
                 command_from_arg(id, arg_iter)
                     .map_err(|e| {
                         println!("{e}");
@@ -360,7 +364,6 @@ pub fn parse_command(input: &str) -> Result<BudgetCommand> {
     Ok(cmd)
 }
 
-// for use in CLI
 pub fn run_interactive(mut bud: Budget) -> Result<Budget> {
     let term = Term::stdout();
     term.set_title(APP_TITLE);

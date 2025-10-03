@@ -61,20 +61,12 @@ impl SaveFormat {
 
 pub fn handle_account_load(cfg: &AppConfig) -> Result<Budget> {
     //rename default account if needed
-    cfg.account_options
-        .default_rename
-        .as_ref()
-        .map(|new_name| change_default_account_display_name(new_name))
-        .unwrap_or(Ok(()))?;
+    if let Some(name) = &cfg.account_options.default_rename {
+        change_default_account_display_name(name)?;
+    }
 
     let bud = if cfg.app_settings.mem_only {
-        Budget::new(
-            cfg.account_options
-                .account
-                .as_ref()
-                .map(|s| s.as_str())
-                .unwrap_or("default"),
-        )
+        Budget::new(cfg.account_options.account.as_deref().unwrap_or("default"))
     } else {
         match &cfg.account_options.account {
             Some(acc) => match cfg.account_options.create {
@@ -118,7 +110,7 @@ fn read_account_file(account: &str) -> Result<File> {
     #[cfg(debug_assertions)]
     println!("[DEV] opening file {file_name}");
 
-    Ok(File::open(file_name)?)
+    File::open(file_name).map_err(|_| Error::NoAccountFound(account.into()))
 }
 
 // -- SAVING --
@@ -155,14 +147,6 @@ pub fn create_new_budget_account(account: &str) -> Result<Budget> {
 //creates and returns an empty save file
 pub fn make_account_file(account: &str) -> Result<File> {
     Ok(File::create(format!("data/{account}.bson"))?)
-}
-
-//creates and returns a new initialized save file
-pub fn make_new_account_file(account: &str) -> Result<File> {
-    let mut file = make_account_file(account)?;
-    file.write_all(&SaveFormat::new(account).into_bytes())?;
-    file.flush()?;
-    Ok(file)
 }
 
 // -- EDITING --
